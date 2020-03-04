@@ -5,8 +5,8 @@ build
 libs
 out
 .deps
-test
 3party
+bin
 
 core.*
 
