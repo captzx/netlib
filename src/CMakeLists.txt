@@ -1,1 +1,3 @@
+add_subdirectory(lib_pursue_netserver)
+add_subdirectory(lib_pursue_tools)
 add_subdirectory(test)

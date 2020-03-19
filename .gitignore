@@ -2,7 +2,6 @@
 # ---------------------------- special ----------------------------
 #
 build
-libs
 out
 .deps
 3party
@@ -11,6 +10,8 @@ bd
 test_server
 test_client
 core.*
+include
+libs
 
 #
 # ---------------------------- c++ ignore ---------------------------- 

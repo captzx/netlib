@@ -37,5 +37,3 @@
 #include <poll.h>
 
 #include <sys/timerfd.h>
-
-#include "src/common/Logger.h"

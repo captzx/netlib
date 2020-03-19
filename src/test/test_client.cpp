@@ -13,6 +13,7 @@
 #include <cstring>
 #include <iostream>
 #include <boost/asio.hpp>
+#include <pursue_tools/Logger.h>
 
 using namespace boost::asio;
 using boost::asio::ip::tcp;
