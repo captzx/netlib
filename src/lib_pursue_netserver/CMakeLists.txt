@@ -1,5 +1,6 @@
 set(SRCS 
-	netserver.cpp)
+	NetMoudle.cpp
+	Server.cpp)
 
 add_library(pursue_netserver ${SRCS})
 target_link_libraries(pursue_netserver 
@@ -9,7 +10,8 @@ target_link_libraries(pursue_netserver
 install(TARGETS pursue_netserver DESTINATION ${LIBRARY_OUTPUT_PATH})
 
 set(HEADERS 
-	netserver.h)
+	NetMoudle.h
+	Server.h)
 	
 install(FILES ${HEADERS} DESTINATION ${HEADER_OUTPUT_PATH}/pursue_netserver)
 

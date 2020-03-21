@@ -1,0 +1,11 @@
+set(SRCS 
+	LoginServer.cpp
+	main.cpp)
+
+add_executable(logonserver ${SRCS})
+target_link_libraries(logonserver 
+	${BOOST_LIBS}
+	libpursue_netserver.a
+	libpursue_tools.a)
+
+install(TARGETS logonserver DESTINATION ${EXECUTABLE_OUTPUT_PATH})

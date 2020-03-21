@@ -38,7 +38,7 @@ void global_logger_init() {
 		<< std::setiosflags(std::ios::right) << std::setw(10) << severity << ": "
 		<< expr::smessage);
 
-	sink->locked_backend()->add_stream(boost::make_shared<std::ofstream>("sample.log"));
+	sink->locked_backend()->add_stream(boost::make_shared<std::ofstream>("./log/sample.log"));
 	logging::core::get()->add_sink(sink);
 }
 
