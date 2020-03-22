@@ -3,13 +3,7 @@
 #include "LoginServer.h"
 
 int main() {
-	global_logger_init();
-
-	LoginServer& loginserver = LoginServer::GetInstance();
-
-	loginserver.Init();
-
-	loginserver.Start();
+	LoginServer::GetInstance().Start();
 
 	return 0;
 }

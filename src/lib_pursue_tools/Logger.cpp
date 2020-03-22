@@ -1,8 +1,9 @@
 #include "common.h"
 #include "Logger.h"
 
+using namespace piece::tool;
 
-std::ostream& operator<< (std::ostream& strm, severity_level level)
+std::ostream& piece::tool::operator<< (std::ostream& strm, severity_level level)
 {
 	static const char* strings[] =
 	{
@@ -25,28 +26,25 @@ std::ostream& operator<< (std::ostream& strm, severity_level level)
 BOOST_LOG_ATTRIBUTE_KEYWORD(severity, "Severity", severity_level);
 BOOST_LOG_ATTRIBUTE_KEYWORD(process, "Process", std::string);
 
-void global_logger_init() {
+void piece::tool::global_logger_init(const std::string& file) {
 	logging::core::get()->add_global_attribute("TimeStamp", attrs::local_clock());
 	logging::core::get()->add_global_attribute("Process", attrs::current_process_name());
 
-	typedef sinks::synchronous_sink<sinks::text_ostream_backend> text_sink;
-	boost::shared_ptr<text_sink> sink = boost::make_shared<text_sink>();
+	boost::shared_ptr<sinks::text_ostream_backend> backend = boost::make_shared<sinks::text_ostream_backend>();
+	// backend->add_stream(boost::shared_ptr<std::ostream>(&std::clog, boost::null_deleter()));
+	backend->add_stream(boost::shared_ptr<std::ostream>(new std::ofstream(file, std::ios_base::app)));
 
+	backend->auto_flush(true);
+
+	boost::shared_ptr<sink_t> sink = boost::make_shared<sink_t>(backend, true);
+	
 	sink->set_formatter(expr::stream
 		<< expr::format_date_time<boost::posix_time::ptime>("TimeStamp", "%Y-%m-%d %H:%M:%S ")
 		<< process
 		<< std::setiosflags(std::ios::right) << std::setw(10) << severity << ": "
 		<< expr::smessage);
 
-	sink->locked_backend()->add_stream(boost::make_shared<std::ofstream>("./log/sample.log"));
 	logging::core::get()->add_sink(sink);
-}
 
-void test_logger() {
-	log(debug) << "debug" << 1 << "debug debug";
-	log(normal) << "normal" << 2 << " normal normal";
-	log(notice) << "notice" << 3 << " notice notice";
-	log(warning) << "warning" << 4 << " warning warning";
-	log(error) << "error error" << 5 << " error";
-	log(critical) << "critical" << 6 << " critical critical";
+	log(normal) << "logger initialize ... success!";
 }

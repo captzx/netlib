@@ -29,13 +29,18 @@
 #include <boost/log/sources/severity_feature.hpp>
 #include <boost/log/sources/severity_logger.hpp>
 
+#include <boost/log/sinks/async_frontend.hpp>
+
+
+namespace piece {
+namespace tool {
+
 namespace src = boost::log::sources;
 namespace logging = boost::log;
 namespace sinks = boost::log::sinks;
 namespace keywords = boost::log::keywords;
 namespace attrs = boost::log::attributes;
 namespace expr = boost::log::expressions;
-
 
 enum severity_level {
 	debug,
@@ -46,8 +51,13 @@ enum severity_level {
 	critical
 };
 
-BOOST_LOG_INLINE_GLOBAL_LOGGER_DEFAULT(_g_severity_logger, src::severity_logger<severity_level>)
+BOOST_LOG_INLINE_GLOBAL_LOGGER_DEFAULT(_g_severity_logger, src::severity_logger<piece::tool::severity_level>)
 #define log(_severity_level) BOOST_LOG_SEV(_g_severity_logger::get(), _severity_level)
 
-void global_logger_init();
-void test_logger();
+typedef sinks::asynchronous_sink<sinks::text_ostream_backend> sink_t;
+void global_logger_init(const std::string&); 
+
+std::ostream& operator<< (std::ostream& strm, severity_level level);
+
+}
+}

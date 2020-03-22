@@ -1,7 +1,6 @@
 #include "common.h"
 #include <iostream>
 #include <boost/asio.hpp>
-#include <pursue_tools/Logger.h>
 
 using namespace boost::asio;
 using boost::asio::ip::tcp;
@@ -15,6 +14,7 @@ public:
 	}
 
 	void start() {
+		// std::thread(&tcp_connection::do_read, this).detach();
 		do_read();
 	}
 
@@ -56,18 +56,28 @@ public:
 
 private:
 	void do_accept() {
-		_acceptor.async_accept(
-			[&](const boost::system::error_code& ec, tcp::socket sock)
-			{
-				if (!ec)
-				{
-					log(debug) << "new tcp connect, remote: " << sock.local_endpoint() << std::endl;
+		//_acceptor.async_accept(
+		//	[&](const boost::system::error_code& ec, tcp::socket sock)
+		//	{
+		//		if (!ec)
+		//		{
+		//			log(debug) << "new tcp connect, remote: " << sock.local_endpoint() << std::endl;
 
-					std::make_shared<tcp_connection>(std::move(sock))->start();
-				}
+		//			std::make_shared<tcp_connection>(std::move(sock))->start();
+		//		}
 
-				do_accept();
-			});
+		//		do_accept();
+		//	});
+
+		for (;;) {
+			tcp::socket peersock(_acceptor.get_executor());
+			boost::system::error_code ec;
+			_acceptor.accept(peersock, ec);
+			if (!ec) {
+				log(debug) << "[NetMoudle]New Tcp Connect, Remote EndPoint: " << peersock.local_endpoint();
+				std::make_shared<tcp_connection>(std::move(peersock))->start();
+			}
+		}
 	}
 
 private:
@@ -76,13 +86,13 @@ private:
 
 int main(int argc, char* argv[])
 {
-	global_logger_init();
+	global_logger_init("./log/server.log");
 
 	io_context io_context;
 
 	server s(io_context, std::atoi(argv[1]));
 
-	io_context.run();
+	// io_context.run();
 
 	return 0;
 }

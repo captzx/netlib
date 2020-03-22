@@ -13,31 +13,25 @@
 #include <cstring>
 #include <iostream>
 #include <boost/asio.hpp>
-#include <pursue_tools/Logger.h>
 
 using namespace boost::asio;
 using boost::asio::ip::tcp;
+
+using namespace piece::tool;
 
 enum { max_length = 1024 };
 
 int main(int argc, char* argv[])
 {
-	global_logger_init();
+	global_logger_init("./log/client.log");
 
 	try
 	{
-		if (argc != 3)
-		{
-			std::cerr << "Usage: blocking_tcp_echo_client <host> <port>\n";
-			return 1;
-		}
-
 		io_context io_context;
 
 		tcp::socket sock(io_context);
-		sock.connect(tcp::endpoint(ip::address::from_string(argv[1]), std::stoi(std::string(argv[2]))));
-
-		log(debug) << "local: " << sock.local_endpoint() << "connect success, remote: " << sock.remote_endpoint() << std::endl;
+		sock.connect(tcp::endpoint(ip::address::from_string("127.0.0.1"), 1234));
+		log(debug) << "local: " << sock.local_endpoint() << ", remote: " << sock.remote_endpoint()<< "... connect success" << std::endl;
 
 		std::cout << "Enter message: ";
 		char request[max_length];
@@ -55,6 +49,8 @@ int main(int argc, char* argv[])
 	{
 		std::cerr << "Exception: " << e.what() << "\n";
 	}
+
+	// global_logger_stop2(sink);
 
 	return 0;
 }

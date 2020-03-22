@@ -1,11 +1,13 @@
 #pragma once
 
 #include <memory>
-
 #include <mutex>
 
+namespace piece {
+namespace tool {
+
 template<typename T, typename... Ts>
-std::unique_ptr<T> make_unique(Ts&&... params) {
+std::unique_ptr<T> make_unique(Ts&& ... params) {
 	return std::unique_ptr<T>(new T(std::forward<Ts>(params)...));
 }
 
@@ -27,7 +29,7 @@ public:
 
 private:
 	static void Make() {
-		_instance.reset(new T());
+		_instance = make_unique<T>();
 	}
 
 private:
@@ -37,3 +39,6 @@ private:
 
 template <typename T> std::once_flag Singleton<T>::_onceFlag;
 template <typename T> std::unique_ptr<T> Singleton<T>::_instance;
+
+}
+}

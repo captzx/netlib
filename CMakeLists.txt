@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 
 project(netlib)
 
-add_compile_options(-std=c++1y -DBOOST_ALL_DYN_LINK -llib_pursue_netserver -llib_pursue_tools)
+add_compile_options(-std=c++1y -DBOOST_ALL_DYN_LINK -llib_pursue_netserver -llib_pursue_tools -llib_tinyxml2)
 
 include_directories(${PROJECT_SOURCE_DIR})
 
@@ -17,11 +17,12 @@ set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
 set(INCLUDEDIRS 
 	/usr/local/include 
 	./src/common
-	${HEADER_OUTPUT_PATH})
+	./src/lib_pursue_netserver
+	./src/lib_pursue_tools)
 
 set(LIBRARYDIRS 
 	/usr/local/lib
-	${LIBRARY_OUTPUT_PATH})
+	/usr/local/lib64)
 
 include_directories(${INCLUDEDIRS})
 link_directories(${LIBRARYDIRS})
@@ -31,6 +32,8 @@ set(BOOST_LIBS
 	libboost_log_setup.so 
 	libboost_thread.so 
 	libpthread.so 
-	libboost_locale.so)
+	libboost_locale.so
+	
+	libtinyxml2.so)
 
 add_subdirectory(src)
