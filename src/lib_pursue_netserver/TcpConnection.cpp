@@ -10,11 +10,13 @@ using namespace piece::net;
 using namespace piece::tool;
 
 TcpConnection::TcpConnection(std::shared_ptr<tcp::socket> sock):
-	_sock(std::move(sock)) {
+	_sock(sock) {
 }
 
 void TcpConnection::Established() {
-	log(debug) << "tcp make establish, remote endPoint: " << _sock->remote_endpoint() << ". is non-blocking mode? " << _sock->non_blocking() << ".";
+	log(debug) << "tcp make establish, remote endPoint: " << _sock->remote_endpoint() << ". " 
+		<< "socket is non-blocking mode? " << _sock->non_blocking() << ". "
+		<< "socket is open? " << _sock->is_open() << ".";
 
 	auto self(shared_from_this());
 	_sock->async_wait(tcp::socket::wait_read, 

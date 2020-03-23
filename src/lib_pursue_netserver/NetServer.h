@@ -27,7 +27,7 @@ private:
 	io_context _io_context;
 	tcp::acceptor _acceptor;
 
-	// TcpConnectionManager _tcpConnections;
+	TcpConnectionManager _tcpConnections;
 };
 
 }

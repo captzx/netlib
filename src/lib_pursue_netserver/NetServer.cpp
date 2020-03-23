@@ -9,6 +9,9 @@ using namespace boost;
 using namespace piece::net;
 using namespace piece::tool;
 
+
+int connection_count = 0;
+
 NetServer::NetServer():
 	_acceptor(_io_context) {
 
@@ -48,10 +51,13 @@ void NetServer::Listen(unsigned int port) {
 void NetServer::_Listening() {
 	std::shared_ptr<tcp::socket> pSock  = std::make_shared<tcp::socket>(_io_context);
 	_acceptor.async_accept(*pSock,
-		[&](const error_code& ec)
+		[this, pSock](const error_code& ec)
 		{
 			if (!ec)
 			{
+				/*std::shared_ptr<TcpConnection> pConnection = std::make_shared<TcpConnection>(pSock);
+				_tcpConnections.insert({connection_count++, pConnection});
+				pConnection->Established();*/
 				std::make_shared<TcpConnection>(pSock)->Established();
 			}
 
