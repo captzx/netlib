@@ -20,6 +20,7 @@ NetServer::NetServer():
 void NetServer::Init() {
 	log(normal) << "net server initialize ... success!";
 }
+
 void NetServer::Listen(unsigned int port) {
 	if (port == 0) {
 		log(error) << "listen failure... port: " << port;

@@ -33,6 +33,7 @@
 
 
 namespace piece {
+
 namespace tool {
 
 namespace src = boost::log::sources;
@@ -59,5 +60,6 @@ void global_logger_init(const std::string&);
 
 std::ostream& operator<< (std::ostream& strm, severity_level level);
 
-}
-}
+} // namespace tool
+
+} // namespace piece

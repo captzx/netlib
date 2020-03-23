@@ -3,6 +3,7 @@
 #include <boost/asio.hpp>
 
 namespace piece {
+
 namespace net {
 
 using boost::asio::ip::tcp;
@@ -30,5 +31,6 @@ private:
 	TcpConnectionManager _tcpConnections;
 };
 
-}
-}
+} // namespace net
+
+} // namespace piece

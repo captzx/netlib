@@ -1,29 +1,33 @@
 #pragma once
 #include <string>
+#include <memory>
 
 #include "Singleton.h"
-#include "NetServer.h"
 
-using piece::net::NetServer;
 using piece::tool::Singleton;
 
-struct lsCfg {
-	std::string file;
-	unsigned int port = 0;
-};
+namespace piece {
+
+namespace net { class NetServer; }
+using piece::net::NetServer;
+
+namespace login {
 
 class LoginServer : public Singleton<LoginServer> {
 public:
+	LoginServer();
+
+public:
 	void Start();
 
-	bool ReloadConfig();
-
 private:
-	bool _LoadConfig(std::string file);
-
 	bool _Init();
 
 private:
-	NetServer _tcpServer;
-	lsCfg _lsCfg;
+	std::shared_ptr<NetServer> _pTcpServer;
 };
+
+} // namespace login
+
+} // namespace piece
+

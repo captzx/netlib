@@ -4,6 +4,7 @@
 #include <mutex>
 
 namespace piece {
+
 namespace tool {
 
 template<typename T, typename... Ts>
@@ -40,5 +41,6 @@ private:
 template <typename T> std::once_flag Singleton<T>::_onceFlag;
 template <typename T> std::unique_ptr<T> Singleton<T>::_instance;
 
-}
-}
+} // namespace tool
+
+} // namespace piece

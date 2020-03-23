@@ -4,6 +4,7 @@ set(SRCS
 	../lib_pursue_netserver/NetServer.cpp
 	../lib_pursue_netserver/TcpConnection.cpp
 
+	LoginConfig.cpp
 	LoginServer.cpp
 	main.cpp)
 
