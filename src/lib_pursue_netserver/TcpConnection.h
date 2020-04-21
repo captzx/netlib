@@ -1,6 +1,12 @@
 #pragma once
 
-#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio.hpp>
+
+#include "Buffer.h"
+
+namespace google::protobuf {
+	class Message;
+}
 
 namespace piece {
 namespace net {
@@ -8,6 +14,7 @@ namespace net {
 const unsigned int max_length = 1024;
 
 using boost::asio::ip::tcp;
+
 
 class TcpConnection : public std::enable_shared_from_this<TcpConnection> {
 public:
@@ -26,7 +33,7 @@ public:
 private:
 	std::shared_ptr<tcp::socket> _sock;
 
-	char _data[max_length];
+	Buffer _buf;
 };
 
 typedef std::shared_ptr<TcpConnection> TcpConnectionPtr;
