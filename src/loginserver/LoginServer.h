@@ -2,14 +2,14 @@
 #include <string>
 #include <memory>
 
-#include "Singleton.h"
+#include <xtools/Singleton.h>
 
-using piece::tool::Singleton;
+using x::tool::Singleton;
 
-namespace piece {
+namespace x {
 
 namespace net { class NetServer; }
-using piece::net::NetServer;
+using x::net::NetServer;
 
 namespace login {
 
@@ -29,5 +29,5 @@ private:
 
 } // namespace login
 
-} // namespace piece
+} // namespace x
 

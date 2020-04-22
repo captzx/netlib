@@ -1,5 +1,7 @@
-#include "common.h"
 #include "ProtobufCodec.h"
+
+#include <xtools/Logger.h>
+
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/message.h>
 
@@ -8,8 +10,8 @@
 #include "Buffer.h"
 
 using namespace boost;
-using namespace piece::net;
-using namespace piece::tool;
+using namespace x::net;
+using namespace x::tool;
 
 void ProtobufCodec::PackMessage(Buffer& buf, const google::protobuf::Message& message)
 {
@@ -19,7 +21,7 @@ void ProtobufCodec::PackMessage(Buffer& buf, const google::protobuf::Message& me
 	buf.Write(message_name_len);
 	buf.Write(message_name.c_str(), message_name_len);
 
-	int message_size = message.ByteSize();
+	int message_size = message.ByteSizeLong();
 	buf.EnsureWriteable(message_size);
 
 	uint8_t* start = reinterpret_cast<uint8_t*>(buf.WritePtr());
@@ -89,6 +91,7 @@ google::protobuf::Message* ProtobufCodec::CreateMessage(const std::string& messa
 }
 
 void ProtobufCodec::Recv(const TcpConnectionPtr& conn, Buffer* buf) {
+	log(debug) << "Recv data, cur buf readable: " << buf->Readable();
 	while (buf->Readable() >= message_min_len + header_len)
 	{
 		const int32_t len = buf->Read<int32_t>();

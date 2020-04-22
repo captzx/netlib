@@ -12,6 +12,12 @@ test_client
 core.*
 include
 libs
+.vim*
+cscope*
+functions
+tags
+upcs.sh
+proto/*.cc
 
 #
 # ---------------------------- c++ ignore ---------------------------- 

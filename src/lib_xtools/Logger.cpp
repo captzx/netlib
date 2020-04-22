@@ -1,9 +1,10 @@
-#include "common.h"
 #include "Logger.h"
 
-using namespace piece::tool;
+#include <fstream>
 
-std::ostream& piece::tool::operator<< (std::ostream& strm, severity_level level)
+using namespace x::tool;
+
+std::ostream& x::tool::operator<< (std::ostream& strm, severity_level level)
 {
 	static const char* strings[] =
 	{
@@ -26,7 +27,7 @@ std::ostream& piece::tool::operator<< (std::ostream& strm, severity_level level)
 BOOST_LOG_ATTRIBUTE_KEYWORD(severity, "Severity", severity_level);
 BOOST_LOG_ATTRIBUTE_KEYWORD(process, "Process", std::string);
 
-void piece::tool::global_logger_init(const std::string& file) {
+void x::tool::global_logger_init(const std::string& file) {
 	logging::core::get()->add_global_attribute("TimeStamp", attrs::local_clock());
 	logging::core::get()->add_global_attribute("Process", attrs::current_process_name());
 

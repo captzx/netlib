@@ -1,3 +1,3 @@
 #!/bin/bash
 
-protoc --proto_path=. --cpp_out=../src/protos/cpp login.proto
+protoc --proto_path=. --cpp_out=../src/protos login.proto

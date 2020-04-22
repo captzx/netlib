@@ -1,18 +1,19 @@
 #pragma once
 
-#include "Singleton.h"
-#include "TcpConnection.h"
+#include <xtools/Singleton.h>
 #include <boost/asio.hpp>
 #include <google/protobuf/message.h>
+
+#include "TcpConnection.h"
 
 #include "Buffer.h"
 
 #include <memory>
 
-using piece::tool::Singleton;
-using piece::net::Buffer;
+using x::tool::Singleton;
+using x::net::Buffer;
 
-namespace piece {
+namespace x {
 
 namespace net {
 

@@ -1,28 +1,16 @@
-//
-// blocking_tcp_echo_client.cpp
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// Copyright (c) 2003-2019 Christopher M. Kohlhoff (chris at kohlhoff dot com)
-//
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-//
-
 #include "common.h"
-#include <cstdlib>
-#include <cstring>
-#include <iostream>
-#include <boost/asio.hpp>
 
-#include "../protos/cpp/login.pb.h"
-#include "../lib_pursue_netserver/ProtobufCodec.h"
-#include "../lib_pursue_netserver/Buffer.h"
+#include <xprotos/login.pb.h>
+#include <xnet/ProtobufCodec.h>
+#include <xnet/Buffer.h>
+
+#include <boost/asio.hpp>
 
 using namespace boost::asio;
 using boost::asio::ip::tcp;
 
-using namespace piece::tool;
-using namespace piece::net;
+using namespace x::tool;
+using namespace x::net;
 
 enum { max_length = 1024 };
 
@@ -46,7 +34,7 @@ int main(int argc, char* argv[])
 		Buffer buf;
 		ProtobufCodec::PackMessage(buf, msg);
 
-		std::cout << "Enter message: ";
+		std::cout << "Enter message: len = " << buf.Readable() << std::endl;
 		
 		sock.send(buffer(buf.ReadPtr(), buf.Readable()));
 

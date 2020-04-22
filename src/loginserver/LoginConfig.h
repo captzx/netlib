@@ -2,13 +2,13 @@
 
 #include <string>
 
-#include "Singleton.h"
-#include "Config.h"
+#include <xtools/Singleton.h>
+#include <xtools/Config.h>
 
-using piece::tool::Config;
-using piece::tool::Singleton;
+using x::tool::Config;
+using x::tool::Singleton;
 
-namespace piece {
+namespace x {
 
 namespace login {
 
@@ -27,4 +27,4 @@ private:
 
 } // login
 
-} // piece
+} // x

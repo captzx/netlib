@@ -1,14 +1,13 @@
-#include "common.h"
-
 #include "NetServer.h"
+
+#include <xtools/Logger.h>
 #include "TcpConnection.h"
 
 using boost::asio::ip::tcp;
 using boost::system::error_code;
 using namespace boost;
-using namespace piece::net;
-using namespace piece::tool;
-
+using namespace x::net;
+using namespace x::tool;
 
 int connection_count = 0;
 

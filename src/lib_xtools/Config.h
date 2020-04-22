@@ -5,7 +5,7 @@
 
 using namespace tinyxml2;
 
-namespace piece {
+namespace x {
 
 namespace tool {
 
@@ -37,5 +37,5 @@ private:
 
 } // namespace tool
 
-} // namespace piece
+} // namespace x
 

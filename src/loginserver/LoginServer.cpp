@@ -1,12 +1,13 @@
-#include "common.h"
-
 #include "LoginServer.h"
 
-#include "LoginConfig.h"
-#include "NetServer.h"
+#include "common.h"
 
-using namespace piece::login;
-using namespace piece::tool;
+#include "LoginConfig.h"
+#include <xnet/NetServer.h>
+
+
+using namespace x::login;
+using namespace x::tool;
 
 LoginServer::LoginServer(){
 	_pTcpServer = std::make_shared<NetServer>();

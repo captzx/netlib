@@ -1,7 +1,7 @@
 #include "common.h"
 #include "LoginConfig.h"
 
-using namespace piece::login;
+using namespace x::login;
 
 bool LoginConfig::Parse() {
 	const std::shared_ptr<XMLDocument>& pDoc = GetXmlDoc();

@@ -3,7 +3,7 @@
 #include <memory>
 #include <mutex>
 
-namespace piece {
+namespace x {
 
 namespace tool {
 
@@ -43,4 +43,4 @@ template <typename T> std::unique_ptr<T> Singleton<T>::_instance;
 
 } // namespace tool
 
-} // namespace piece
+} // namespace x

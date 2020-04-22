@@ -2,7 +2,7 @@
 
 #include <boost/asio.hpp>
 
-namespace piece {
+namespace x {
 
 namespace net {
 
@@ -33,4 +33,4 @@ private:
 
 } // namespace net
 
-} // namespace piece
+} // namespace x

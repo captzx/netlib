@@ -8,7 +8,7 @@ namespace google::protobuf {
 	class Message;
 }
 
-namespace piece {
+namespace x {
 namespace net {
 
 const unsigned int max_length = 1024;

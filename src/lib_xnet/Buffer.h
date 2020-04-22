@@ -4,9 +4,10 @@
 #include <memory>
 #include <vector>
 #include <string>
-#include <assert.h>
+#include <cstring>
+#include <cassert>
 
-namespace piece {
+namespace x {
 
 namespace net {
 

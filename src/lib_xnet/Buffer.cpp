@@ -1,7 +1,6 @@
-#include "common.h"
 #include "Buffer.h"
 
-using namespace piece::net;
+using namespace x::net;
 
 const size_t Buffer::PrependSize;
 const size_t Buffer::InitialSize;

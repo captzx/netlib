@@ -32,7 +32,7 @@
 #include <boost/log/sinks/async_frontend.hpp>
 
 
-namespace piece {
+namespace x {
 
 namespace tool {
 
@@ -52,7 +52,7 @@ enum severity_level {
 	critical
 };
 
-BOOST_LOG_INLINE_GLOBAL_LOGGER_DEFAULT(_g_severity_logger, src::severity_logger<piece::tool::severity_level>)
+BOOST_LOG_INLINE_GLOBAL_LOGGER_DEFAULT(_g_severity_logger, src::severity_logger<x::tool::severity_level>)
 #define log(_severity_level) BOOST_LOG_SEV(_g_severity_logger::get(), _severity_level)
 
 typedef sinks::asynchronous_sink<sinks::text_ostream_backend> sink_t;
@@ -62,4 +62,4 @@ std::ostream& operator<< (std::ostream& strm, severity_level level);
 
 } // namespace tool
 
-} // namespace piece
+} // namespace x
