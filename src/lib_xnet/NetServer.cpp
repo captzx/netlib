@@ -1,66 +1,67 @@
 #include "NetServer.h"
 
 #include <xtools/Logger.h>
-#include "TcpConnection.h"
 
-using boost::asio::ip::tcp;
-using boost::system::error_code;
 using namespace boost;
 using namespace x::net;
 using namespace x::tool;
 
+using boost::asio::ip::tcp;
+using boost::system::error_code;
+
 int connection_count = 0;
 
-NetServer::NetServer():
+NetServer::NetServer(std::string name):
+	_name(name),
 	_acceptor(_io_context) {
 
 }
 
-void NetServer::Init() {
-	log(normal) << "net server initialize ... success!";
-}
-
 void NetServer::Listen(unsigned int port) {
 	if (port == 0) {
-		log(error) << "listen failure... port: " << port;
-		return;
-	}
-	tcp::endpoint local_ep(tcp::v4(), port);
-	_acceptor.open(local_ep.protocol());
-	error_code ec;
-	_acceptor.bind(local_ep, ec);
-	if (ec) {
-		log(error) << "bind port: " << port << "... failure, error code: " << ec;
+		log(error) << "acceptor listen failure, error message: port = " << port;
 		return;
 	}
 
-	_acceptor.listen(asio::socket_base::max_listen_connections, ec);
-	if (ec)
-	{
-		log(error) << "listening port: " << port << "... failure, error code: " << ec;
+	tcp::endpoint local(tcp::v4(), port);
+	_acceptor.open(local.protocol());
+
+	error_code code;
+
+	_acceptor.bind(local, code);
+	if (code) {
+		log(error) << "acceptor bind port " << port << " failure, error message: " << code.message();
 		return;
 	}
 
-	log(normal) << "listening... port: " << port;
+	_acceptor.listen(asio::socket_base::max_listen_connections, code);
+	if (code) {
+		log(error) << "acceptor listen port " << port << " failure, error code: " << code.message();
+		return;
+	}
 
-	_Listening();
+	log(normal) << "acceptor listening... port: " << port;
+
+	AsyncListenInLoop();
+
 	_io_context.run();
 }
 
 
-void NetServer::_Listening() {
-	std::shared_ptr<tcp::socket> pSock  = std::make_shared<tcp::socket>(_io_context);
+void NetServer::AsyncListenInLoop() {
+	SocketPtr pSock  = std::make_shared<tcp::socket>(_io_context);
 	_acceptor.async_accept(*pSock,
-		[this, pSock](const error_code& ec)
+		[this, pSock](const error_code& code)
 		{
-			if (!ec)
-			{
-				/*std::shared_ptr<TcpConnection> pConnection = std::make_shared<TcpConnection>(pSock);
-				_tcpConnections.insert({connection_count++, pConnection});
-				pConnection->Established();*/
-				std::make_shared<TcpConnection>(pSock)->Established();
+			if (code) {
+				log(error) << "async accept failure, error message: " << code.message();
+				return;
 			}
 
-			_Listening();
+			/*std::shared_ptr<TcpConnection> pConnection = std::make_shared<TcpConnection>(pSock);
+				_tcpConnections.insert({connection_count++, pConnection});
+				pConnection->Established();*/
+			std::make_shared<TcpConnection>(std::move(pSock))->Established();
+			AsyncListenInLoop();
 		});
 }

@@ -5,7 +5,8 @@
 using x::login::LoginServer;
 
 int main() {
-	LoginServer::GetInstance().Start();
+	std::shared_ptr<LoginServer> pLoginServer = std::make_shared<LoginServer>("LoginServer");
+	if (pLoginServer) pLoginServer->Start();
 
 	return 0;
 }

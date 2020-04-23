@@ -1,33 +1,47 @@
 #pragma once
 #include <string>
 #include <memory>
+#include <string>
 
+#include <xtools/Config.h>
 #include <xtools/Singleton.h>
+#include <xnet/NetServer.h>
 
+using x::tool::Config;
 using x::tool::Singleton;
 
 namespace x {
-
-namespace net { class NetServer; }
-using x::net::NetServer;
-
 namespace login {
 
-class LoginServer : public Singleton<LoginServer> {
+/// class LoginServer
+using x::net::NetServer;
+using NetServerPtr = std::shared_ptr<NetServer>;
+class LoginServer {
 public:
-	LoginServer();
+	explicit LoginServer(std::string);
 
 public:
 	void Start();
 
 private:
-	bool _Init();
+	NetServerPtr _pTcpServer;
+};
+
+/// class LoginConfig
+class LoginConfig : public Config, public Singleton<LoginConfig> {
+	friend class LoginServer;
+public:
+	virtual bool Parse() override;
+
+public:
+	unsigned int GetListenPort() { return _netPort; }
+	const std::string& GetLogFile() { return _logFile; }
 
 private:
-	std::shared_ptr<NetServer> _pTcpServer;
+	std::string _logFile;
+	unsigned int _netPort;
 };
 
 } // namespace login
-
 } // namespace x
 

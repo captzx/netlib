@@ -8,7 +8,6 @@
 #include <cassert>
 
 namespace x {
-
 namespace net {
 
 class Buffer {
@@ -114,6 +113,5 @@ private:
 	size_t _wptr;
 };
 
-}
-
-}
+} // namespace net
+} // namespace x

@@ -1,10 +1,9 @@
-set(SRCS 
-	LoginConfig.cpp
+set(TARGETNAME LoginServer)
+
+set(SRCS
 	LoginServer.cpp
 	main.cpp)
 
-add_executable(logonserver ${SRCS})
-
-target_link_libraries(logonserver ${ALLLIBS})
-
-install(TARGETS logonserver DESTINATION ${EXECUTABLE_OUTPUT_PATH})
+add_executable(${TARGETNAME} ${SRCS})
+target_link_libraries(${TARGETNAME} ${ALLLIBS})
+install(TARGETS ${TARGETNAME} DESTINATION ${EXECUTABLE_OUTPUT_PATH})

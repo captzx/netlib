@@ -1,6 +1,8 @@
-add_executable(test_client 
-	test_client.cpp
-	)
-target_link_libraries(test_client ${ALLLIBS})
+set(TARGETNAME Client)
 
-install(TARGETS test_client DESTINATION ${EXECUTABLE_OUTPUT_PATH})
+set(SRCS 
+	test_client.cpp)
+
+add_executable(${TARGETNAME} ${SRCS})
+target_link_libraries(${TARGETNAME} ${ALLLIBS})
+install(TARGETS ${TARGETNAME} DESTINATION ${EXECUTABLE_OUTPUT_PATH})

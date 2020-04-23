@@ -1,40 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <Root>
-  <LoginServer>
-    <Log file="/home/zx/netlib/log/loginserver.log" />
+  <LoginServer name="LoginServer">
+    <Log output="./log/loginserver.log" />
     <Net port="1234"/>
   </LoginServer>
 </Root>
-
-<!--
-cd ./src/lib_xtools
-if [ ! -d "build" ];then mkdir build
-else
-cd build
-cmake ..
-make 
-make install
-fi
-
-
-
-cd ~/netlib
-cd ./src/lib_xnet
-if [ ! -d "build" ];then mkdir build
-else 
-cd build
-cmake ..
-make 
-make install
-fi
-
-cd ~/netlib
-if [ ! -d "build" ];then mkdir build
-else 
-cd build
-cmake ..
-make
-fi
-
--->

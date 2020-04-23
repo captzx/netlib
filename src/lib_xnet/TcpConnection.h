@@ -1,24 +1,18 @@
 #pragma once
 
-#include <boost/asio.hpp>
-
 #include "Buffer.h"
 
-namespace google::protobuf {
-	class Message;
-}
+#include <boost/asio.hpp>
 
 namespace x {
 namespace net {
 
-const unsigned int max_length = 1024;
-
 using boost::asio::ip::tcp;
-
+using SocketPtr = std::shared_ptr<tcp::socket>;
 
 class TcpConnection : public std::enable_shared_from_this<TcpConnection> {
 public:
-	TcpConnection(std::shared_ptr<tcp::socket> sock);
+	TcpConnection(SocketPtr);
 
 	void Established(); 
 	// void Disconnected();
@@ -31,12 +25,11 @@ public:
 	// void SyncReceive();
 	void AsyncReceive();
 private:
-	std::shared_ptr<tcp::socket> _sock;
-
+	SocketPtr _pSock;
 	Buffer _buf;
 };
 
-typedef std::shared_ptr<TcpConnection> TcpConnectionPtr;
+using TcpConnectionPtr = std::shared_ptr<TcpConnection>;
 
-}
-}
+} // namespace net
+} // namespace x

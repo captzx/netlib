@@ -1,56 +1,64 @@
 #include "TcpConnection.h"
 
-#include <xtools/Logger.h>
-#include <boost/asio.hpp>
-
 #include "ProtobufCodec.h"
 
-using boost::asio::ip::tcp;
-using boost::system::error_code;
-using namespace boost;
+#include <xtools/Logger.h>
+
 using namespace x::net;
 using namespace x::tool;
+using namespace boost;
 
-TcpConnection::TcpConnection(std::shared_ptr<tcp::socket> sock):
-	_sock(sock) {
+using boost::system::error_code;
+
+TcpConnection::TcpConnection(SocketPtr pSock):
+	_pSock(pSock) {
 }
 
 void TcpConnection::Established() {
-	log(debug) << "tcp make establish, remote endPoint: " << _sock->remote_endpoint() << ". " 
-		<< "socket is non-blocking mode? " << _sock->non_blocking() << ". "
-		<< "socket is open? " << _sock->is_open() << ".";
+	log(debug) << "tcp make establish, remote endPoint: " << _pSock->remote_endpoint() << ".";
+	log(debug) << "socket is non-blocking mode? " << _pSock->non_blocking() << ".";
+	log(debug) << "socket is open? " << _pSock->is_open() << ".";
 
 	auto self(shared_from_this());
-	_sock->async_wait(tcp::socket::wait_read, 
-		[this, self](const error_code& ec) {
-			if (!ec) {
-				AsyncReceive();
+	_pSock->async_wait(tcp::socket::wait_read, // Asynchronously wait for the socket to become ready to read, ready to write, or to have pending error conditions.
+		[this, self](const error_code& code) -> void {
+			if (code) {
+				log(error) << "async wait failure, error message: " << code.message();
+				return;
 			}
+			
+			AsyncReceive();
 		});
 }
 
 void TcpConnection::AsyncReceive() {
 	auto self(shared_from_this());
-	_sock->async_read_some(asio::buffer(_buf.WritePtr(), _buf.Writeable()),
-		[this, self](const error_code& ec, size_t len) { // NOTICE: lambda capture [this, self]
-			if (!ec) {
-				this->_buf.MoveWritePtr(len);
-				ProtobufCodec::GetInstance().Recv(shared_from_this(), &this->_buf);
+	_pSock->async_read_some(asio::buffer(_buf.WritePtr(), _buf.Writeable()),
+		[this, self](const error_code& code, size_t len)  -> void { // NOTICE: lambda capture [this, self]
+			if (code) {
+				log(error) << "async receive failure, error message: " << code.message();
+				return;
 			}
 
-			if (len > 0)
-				log(debug) << "read data from " << _sock->remote_endpoint() << ", length: " << len;
-			else if (len == 0)
-				log(debug) << _sock->remote_endpoint() << " close.";
+			if (len == 0) log(debug) << _pSock->remote_endpoint() << " close.";
+			else log(debug) << "async receive data from: " << _pSock->remote_endpoint() << ", length: " << len;
+
+			this->_buf.MoveWritePtr(len);
+			ProtobufCodec::GetInstance().Recv(shared_from_this(), &this->_buf);
 		});
 }
 
 void TcpConnection::AsyncSend(unsigned int len) {
 	auto self(shared_from_this());
-	_sock->async_write_some(asio::buffer(_buf.ReadPtr(), len),
-		[this, self](const error_code& ec, size_t len) {
-			if (!ec) AsyncReceive();
+	_pSock->async_write_some(asio::buffer(_buf.ReadPtr(), len),
+		[this, self](const error_code& code, size_t len) -> void {
+			if (code) {
+				log(error) << "async send failure, error message: " << code.message();
+				return;
+			}
 
-			log(debug) << "write data to " << _sock->remote_endpoint() << ", length: " << len;
+			AsyncReceive();
+
+			log(debug) << "async receive data to: " << _pSock->remote_endpoint() << ", length: " << len;
 		});
 }
