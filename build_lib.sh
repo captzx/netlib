@@ -21,8 +21,7 @@ else
 	make install
 fi
 
-cd ~/netlib
-cd ./src/lib_xprotos
+cd ~/netlib/src/lib_xprotos
 if [ ! -d "build" ]; then
 	mkdir build
 else

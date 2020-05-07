@@ -5,3 +5,7 @@ message SearchRequest {
   int32 page_number = 2;
   int32 result_per_page = 3;
 }
+
+message SearchResponse {
+  uint32 result = 1;
+}

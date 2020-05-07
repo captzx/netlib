@@ -3,6 +3,7 @@
 #include <xprotos/login.pb.h>
 #include <xnet/ProtobufCodec.h>
 #include <xnet/Buffer.h>
+#include <xnet/TcpClient.h>
 
 #include <boost/asio.hpp>
 
@@ -14,29 +15,68 @@ using namespace x::net;
 
 enum { max_length = 1024 };
 
+using x::net::NetServer;
+using TcpClientPtr = std::shared_ptr<TcpClient>;
+class TestClient {
+public:
+	explicit TestClient(std::string);
+
+public:
+	void Connect(std::string ip, unsigned int port) {
+		_pTcpClient.Connect(tcp::endpoint(ip::address::from_string(ip), port));
+	}
+
+	void Clost() {
+
+	}
+	void Send() {
+
+	}
+private:
+	TcpClientPtr _pTcpClient;
+};
+
 int main(int argc, char* argv[])
 {
 	global_logger_init("./log/client.log");
 
 	try
 	{
-		io_context io_context;
+		TestClient client;
+		client.Connect("127.0.0.1", 1234);
 
-		tcp::socket sock(io_context);
-		sock.connect(tcp::endpoint(ip::address::from_string("127.0.0.1"), 1234));
-		log(debug) << "local: " << sock.local_endpoint() << ", remote: " << sock.remote_endpoint() << "... connect success" << std::endl;
+		int i = 0;
+		while (i++ != 100) {
 
-		SearchRequest msg;
-		msg.set_query("captzx");
-		msg.set_page_number(1);
-		msg.set_result_per_page(1);
+			{
+				SearchRequest msg;
+				msg.set_query("captzx");
+				msg.set_page_number(1);
+				msg.set_result_per_page(1);
 
-		Buffer buf;
-		ProtobufCodec::PackMessage(buf, msg);
+				Buffer buf;
+				ProtobufCodec::PackMessage(buf, msg);
+				using namespace std::chrono_literals;
+				std::cout << "Enter message: len = " << buf.Readable() << std::endl;
 
-		std::cout << "Enter message: len = " << buf.Readable() << std::endl;
-		
-		sock.send(buffer(buf.ReadPtr(), buf.Readable()));
+				client.Send(buffer(buf.ReadPtr(), buf.Readable()));
+				std::this_thread::sleep_for(100ms);
+			}
+			{
+				SearchResponse msg;
+				msg.set_result(1);
+
+				Buffer buf;
+				ProtobufCodec::PackMessage(buf, msg);
+				using namespace std::chrono_literals;
+				std::cout << "Enter message: len = " << buf.Readable() << std::endl;
+
+				client.Send(buffer(buf.ReadPtr(), buf.Readable()));
+			}
+
+		}
+
+		client.Close();
 
 		/*char reply[max_length];
 		size_t reply_length = sock.receive(buffer(reply, request_length));

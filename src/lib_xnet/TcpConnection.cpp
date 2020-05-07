@@ -45,6 +45,7 @@ void TcpConnection::AsyncReceive() {
 
 			this->_buf.MoveWritePtr(len);
 			ProtobufCodec::GetInstance().Recv(shared_from_this(), &this->_buf);
+			AsyncReceive();
 		});
 }
 
@@ -56,9 +57,5 @@ void TcpConnection::AsyncSend(unsigned int len) {
 				log(error) << "async send failure, error message: " << code.message();
 				return;
 			}
-
-			AsyncReceive();
-
-			log(debug) << "async receive data to: " << _pSock->remote_endpoint() << ", length: " << len;
 		});
 }

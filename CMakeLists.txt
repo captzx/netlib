@@ -4,6 +4,12 @@ set(PROJECTNAME xserver)
 
 project(${PROJECTNAME})
 
+find_program(CCACHE_FOUND ccache)
+if(CCACHE_FOUND)
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
+endif(CCACHE_FOUND)
+
 add_compile_options(-std=c++1y 
 	-DBOOST_ALL_DYN_LINK
 	-llib_protobuf

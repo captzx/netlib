@@ -15,8 +15,7 @@ const static int header_len = sizeof(int32_t);
 const static int message_min_len = 2 * header_len + 2; // nameLen + checkSum + message name(at least one char + '\n')
 const static int message_max_len = 64 * 1024 * 1024;
 
-void ProtobufCodec::PackMessage(Buffer& buf, const google::protobuf::Message& message)
-{
+void ProtobufCodec::PackMessage(Buffer& buf, const google::protobuf::Message& message) {
 	const std::string& message_name = message.GetTypeName();
 	int32_t message_name_len = static_cast<int32_t>(message_name.size() + 1);
 	buf.Write(message_name_len);
@@ -26,7 +25,7 @@ void ProtobufCodec::PackMessage(Buffer& buf, const google::protobuf::Message& me
 	buf.EnsureWriteable(message_size);
 	uint8_t* start = reinterpret_cast<uint8_t*>(buf.WritePtr());
 	uint8_t* end = message.SerializeWithCachedSizesToArray(start);
-	if (end - start != message_size) log(error) << "packmessage error, message serialize size not equal.";
+	if (end - start != message_size) log(error) << "pack message error, message serialize size not equal.";
 	buf.MoveWritePtr(message_size);
 
 	int32_t checkSum = static_cast<int32_t>(::adler32(1, reinterpret_cast<const Bytef*>(buf.ReadPtr()), static_cast<int>(buf.Readable())));
@@ -58,8 +57,8 @@ MessagePtr ProtobufCodec::Parse(const char* buf, int len) {
 	message.reset(CreateMessage(message_name));
 	if (message) {
 		const char* data = buf + header_len + message_name_len;
-		int32_t len = len - message_name_len - 2 * header_len;
-		if (message->ParseFromArray(data, len)) log(debug) << "protobuf codec parse success, get message: \"" << message_name << "\"";
+		int32_t data_len = len - message_name_len - 2 * header_len;
+		if (message->ParseFromArray(data, data_len)) log(debug) << "protobuf codec parse success, get message: \"" << message_name << "\"";
 	}
 
 	return message;
@@ -80,7 +79,7 @@ google::protobuf::Message* ProtobufCodec::CreateMessage(const std::string& messa
 
 
 void ProtobufCodec::Recv(const TcpConnectionPtr& conn, Buffer* buf) {
-	log(debug) << "Recv data, cur buf readable: " << buf->Readable();
+	log(debug) << "recv data, cur buf readable: " << buf->Readable();
 
 	while (buf->Readable() >= message_min_len + header_len)
 	{
@@ -93,8 +92,9 @@ void ProtobufCodec::Recv(const TcpConnectionPtr& conn, Buffer* buf) {
 		else if (buf->Readable() >= static_cast<size_t>(len + header_len))
 		{
 			MessagePtr message = Parse(buf->ReadPtr() + header_len, len);
-			// messageCallback_(conn, message, receiveTime);
 			buf->Retrieve(header_len + len);
+
+			ProtobufDispatcher.Recv(conn, message);
 		}
 		else break;
 	}
@@ -103,5 +103,5 @@ void ProtobufCodec::Recv(const TcpConnectionPtr& conn, Buffer* buf) {
 void ProtobufCodec::Send(const TcpConnectionPtr& pConn, const google::protobuf::Message& message){
 	Buffer buf;
 	PackMessage(buf, message);
-	pConn->AsyncSend(&buf);
+	// pConn->AsyncSend(&buf);
 }
