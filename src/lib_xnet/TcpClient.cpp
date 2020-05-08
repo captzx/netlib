@@ -9,8 +9,6 @@ using namespace x::tool;
 using boost::asio::ip::tcp;
 using boost::system::error_code;
 
-int connection_count = 0;
-
 TcpClient::TcpClient(std::string name) :
 	_name(name) {
 
@@ -18,13 +16,19 @@ TcpClient::TcpClient(std::string name) :
 
 void TcpClient::Connect(tcp::endpoint end) {
 	SocketPtr pSock = std::make_shared<tcp::socket>(_io_context);
-	pSock->async_connect(end, [this](const error_code& code)
-		{
-			if (code) {
-				log(error) << "async connect failure, error message: " << code.message();
-				return;
-			}
+	
+	error_code code;
+	pSock->connect(end, code);
+	if (code) {
+		log(error) << "connect failure, error message: " << code.message();
+		return;
+	}
 
-			std::make_shared<TcpConnection>(std::move(pSock))->Established();
-		});
+	if (pSock->is_open()) {
+		_pConnection = std::make_shared<TcpConnection>(std::move(pSock));
+		_pConnection->Established();
+		log(error) << "tcp client connect success.";
+
+		std::thread([&] { _io_context.run(); }).detach();
+	}
 }

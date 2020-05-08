@@ -1,14 +1,17 @@
 #pragma once
-#include <string>
-#include <memory>
-#include <string>
-
+#include <xtools/Common.h>
 #include <xtools/Config.h>
 #include <xtools/Singleton.h>
+#include <xnet/Using.h>
+#include <xnet/TcpConnection.h>
 #include <xnet/NetServer.h>
+#include <xnet/ProtobufCodec.h>
+#include <xnet/ProtobufDispatcher.h>
 
 using x::tool::Config;
 using x::tool::Singleton;
+
+using namespace x::net;
 
 namespace x {
 namespace login {
@@ -23,8 +26,14 @@ public:
 public:
 	void Start();
 
+public:
+	void DefaultMessageCallback(const TcpConnectionPtr&, const MessagePtr&);
+	void onSearchRequest(const TcpConnectionPtr&, const MessagePtr&);
+	void onSearchResponse(const TcpConnectionPtr&, const MessagePtr&);
 private:
 	NetServerPtr _pTcpServer;
+	ProtobufDispatcher _dispatcher; 
+	ProtobufCodec _codec;
 };
 
 /// class LoginConfig

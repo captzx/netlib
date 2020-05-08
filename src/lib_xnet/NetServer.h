@@ -1,6 +1,7 @@
 #pragma once 
 
-#include <boost/asio.hpp>
+#include "Using.h"
+#include "Buffer.h"
 #include "TcpConnection.h"
 
 namespace x {
@@ -19,13 +20,23 @@ public:
 public:
 	void Listen(unsigned int port);
 
+public:
+	void SetMessageCallback(MessageCallback callback) {
+		_messageCallback = callback;
+	}
+	//void DefaultMessageCallback(const TcpConnectionPtr&, Buffer&);
+
 private:
 	void AsyncListenInLoop();
+
 private:
 	std::string _name;
 	io_context _io_context;
 	tcp::acceptor _acceptor;
 	TcpConnectionManager _tcpConnections;
+
+private:
+	MessageCallback _messageCallback;
 };
 
 } // namespace net

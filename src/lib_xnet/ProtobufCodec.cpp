@@ -6,6 +6,7 @@
 
 #include <xtools/Logger.h>
 #include "Buffer.h"
+#include "ProtobufDispatcher.h"
 
 using namespace boost;
 using namespace x::net;
@@ -64,7 +65,6 @@ MessagePtr ProtobufCodec::Parse(const char* buf, int len) {
 	return message;
 }
 
-
 google::protobuf::Message* ProtobufCodec::CreateMessage(const std::string& message_name){
 	google::protobuf::Message* message = NULL;
 	const google::protobuf::Descriptor* descriptor = google::protobuf::DescriptorPool::generated_pool()->FindMessageTypeByName(message_name);
@@ -76,25 +76,24 @@ google::protobuf::Message* ProtobufCodec::CreateMessage(const std::string& messa
 	return message;
 }
 
+void ProtobufCodec::Recv(const TcpConnectionPtr& conn, Buffer& buf) {
+	log(debug) << "recv data, cur buf readable: " << buf.Readable();
 
-
-void ProtobufCodec::Recv(const TcpConnectionPtr& conn, Buffer* buf) {
-	log(debug) << "recv data, cur buf readable: " << buf->Readable();
-
-	while (buf->Readable() >= message_min_len + header_len)
+	while (buf.Readable() >= message_min_len + header_len)
 	{
-		const int32_t len = buf->Read<int32_t>();
+		const int32_t len = buf.Read<int32_t>();
 		if (len > message_max_len || len < message_min_len)
 		{
 			break;
 		}
 
-		else if (buf->Readable() >= static_cast<size_t>(len + header_len))
+		else if (buf.Readable() >= static_cast<size_t>(len + header_len))
 		{
-			MessagePtr message = Parse(buf->ReadPtr() + header_len, len);
-			buf->Retrieve(header_len + len);
+			MessagePtr message = Parse(buf.ReadPtr() + header_len, len);
+			_messageCallback(conn, message);
 
-			ProtobufDispatcher.Recv(conn, message);
+			buf.Retrieve(header_len + len);
+
 		}
 		else break;
 	}
@@ -103,5 +102,5 @@ void ProtobufCodec::Recv(const TcpConnectionPtr& conn, Buffer* buf) {
 void ProtobufCodec::Send(const TcpConnectionPtr& pConn, const google::protobuf::Message& message){
 	Buffer buf;
 	PackMessage(buf, message);
-	// pConn->AsyncSend(&buf);
+	pConn->AsyncSend(buf);
 }

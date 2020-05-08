@@ -1,5 +1,4 @@
-#include "common.h"
-
+#include <xtools/Common.h>
 #include "LoginServer.h"
 
 using x::login::LoginServer;

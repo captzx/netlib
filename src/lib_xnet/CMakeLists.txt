@@ -8,10 +8,13 @@ set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
 set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
 
 set(HEADERS
+	Using.h
 	Buffer.h
 	NetServer.h
 	ProtobufCodec.h
-	TcpConnection.h)
+	ProtobufDispatcher.h
+	TcpConnection.h
+	TcpClient.h)
 set(HEADER_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/../../include)
 install(FILES ${HEADERS} DESTINATION ${HEADER_OUTPUT_PATH}/${TARGETNAME})
 
@@ -21,7 +24,9 @@ set(SRCS
     Buffer.cpp
 	NetServer.cpp
 	ProtobufCodec.cpp
-	TcpConnection.cpp)
+	ProtobufDispatcher.cpp
+	TcpConnection.cpp
+	TcpClient.cpp)
 add_library(${TARGETNAME} SHARED ${SRCS})
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/../../libs)
 install(TARGETS ${TARGETNAME} DESTINATION ${LIBRARY_OUTPUT_PATH})

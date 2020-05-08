@@ -1,7 +1,5 @@
 #include "NetServer.h"
 
-#include <xtools/Logger.h>
-
 using namespace boost;
 using namespace x::net;
 using namespace x::tool;
@@ -9,12 +7,14 @@ using namespace x::tool;
 using boost::asio::ip::tcp;
 using boost::system::error_code;
 
+using namespace std::placeholders;
+
 int connection_count = 0;
 
 NetServer::NetServer(std::string name):
 	_name(name),
 	_acceptor(_io_context) {
-
+	// _messageCallback(std::bind(&NetServer::DefaultMessageCallback, this, std::placeholders::_1, std::placeholders::_2));
 }
 
 void NetServer::Listen(unsigned int port) {
@@ -47,6 +47,9 @@ void NetServer::Listen(unsigned int port) {
 	_io_context.run();
 }
 
+//void NetServer::DefaultMessageCallback(const TcpConnectionPtr&, Buffer&) {
+//	log(debug) << "tcp connection default message call back.";
+//}
 
 void NetServer::AsyncListenInLoop() {
 	SocketPtr pSock  = std::make_shared<tcp::socket>(_io_context);
@@ -58,10 +61,10 @@ void NetServer::AsyncListenInLoop() {
 				return;
 			}
 
-			/*std::shared_ptr<TcpConnection> pConnection = std::make_shared<TcpConnection>(pSock);
-				_tcpConnections.insert({connection_count++, pConnection});
-				pConnection->Established();*/
-			std::make_shared<TcpConnection>(std::move(pSock))->Established();
+			TcpConnectionPtr pConnection = std::make_shared<TcpConnection>(pSock);
+			pConnection->SetMessageCallback(_messageCallback);
+			_tcpConnections.insert({connection_count++, pConnection});
+			pConnection->Established();
 			AsyncListenInLoop();
 		});
 }

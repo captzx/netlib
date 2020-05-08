@@ -1,14 +1,11 @@
 #pragma once
 
+#include "Using.h"
 #include "Buffer.h"
 
-#include <boost/asio.hpp>
-
 namespace x {
-namespace net {
 
-using boost::asio::ip::tcp;
-using SocketPtr = std::shared_ptr<tcp::socket>;
+namespace net {
 
 class TcpConnection : public std::enable_shared_from_this<TcpConnection> {
 public:
@@ -17,19 +14,27 @@ public:
 	void Established(); 
 	// void Disconnected();
 
-	// void Close();
+	void Close();
 	// void Shutdown();
 
-	// void SyncSend(const void* message, int len);
-	void AsyncSend(unsigned int);
+	void AsyncSend(Buffer&);
 	// void SyncReceive();
 	void AsyncReceive();
+
+public:
+	void SetMessageCallback(MessageCallback callback) {
+		_messageCallback = callback;
+	}
+	// void DefaultMessageCallback(const TcpConnectionPtr&, const Buffer&);
+
 private:
 	SocketPtr _pSock;
 	Buffer _buf;
+
+private:
+	MessageCallback _messageCallback;
 };
 
-using TcpConnectionPtr = std::shared_ptr<TcpConnection>;
 
 } // namespace net
 } // namespace x
