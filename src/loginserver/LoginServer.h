@@ -23,9 +23,10 @@ public:
 	void Start();
 
 public:
-	void onSearchRequest(const TcpConnectionPtr&, const MessagePtr&);
-	void onSearchResponse(const TcpConnectionPtr&, const MessagePtr&);
-	void onConnection(const TcpConnectionPtr&);
+	void DefaultMessageCallback(const TcpConnectionPtr&, const MessagePtr&);
+	void OnSearchRequest(const TcpConnectionPtr&, const MessagePtr&);
+	void OnSearchResponse(const TcpConnectionPtr&, const MessagePtr&);
+	void OnConnection(const TcpConnectionPtr&);
 private:
 	TcpServerPtr _pTcpServer;
 	ProtobufDispatcher _dispatcher;

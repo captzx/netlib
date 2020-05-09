@@ -2,7 +2,6 @@
 
 #include "Using.h"
 #include "Buffer.h"
-#include "MessageProcess.h
 
 namespace x {
 
@@ -11,13 +10,18 @@ namespace net {
 using boost::asio::ip::tcp;
 using boost::asio::io_context;
 
+class TcpConnection;
+using TcpConnectionPtr = std::shared_ptr<TcpConnection>;
+using MessageCallback = std::function<void(const TcpConnectionPtr&, Buffer&)>;
+using ConnectionCallback = std::function<void(const TcpConnectionPtr&)>;
+
 void DefaultMessageCallback(const TcpConnectionPtr&, Buffer&);
 void DefaultConnectionCallback(const TcpConnectionPtr&);
 
 /// TcpConnection
 class TcpConnection : public std::enable_shared_from_this<TcpConnection> {
 public:
-	TcpConnection(SocketPtr&&);
+	TcpConnection(SocketPtr);
 
 public:
 	void Established();
@@ -39,10 +43,10 @@ private:
 /// TcpService
 class TcpServices {
 public:
-	explicit TcpServices(std::string name),
+	explicit TcpServices(std::string name):
 	_name(name),
-	_messageCallback(std::bind(DefaultMessageCallback, std::placeholders::_1, std::placeholders::_2)),
-	_connectionCallback(std::bind(DefaultConnectionCallback, std::placeholders::_1, std::placeholders::_2)) {
+	_messageCallback(std::bind(&DefaultMessageCallback, std::placeholders::_1, std::placeholders::_2)),
+	_connectionCallback(std::bind(&DefaultConnectionCallback, std::placeholders::_1)) {
 
 	}
 
@@ -53,11 +57,11 @@ public:
 	void SetConnectionCallback(ConnectionCallback callback) {
 		_connectionCallback = callback;
 	}
-private:
+protected:
 	std::string _name;
 	io_context _io_context;
 
-private:
+protected:
 	MessageCallback _messageCallback;
 	ConnectionCallback _connectionCallback;
 };
@@ -89,7 +93,7 @@ public:
 	explicit TcpClient(std::string);
 
 public:
-	void AsyncConnect(tcp::endpoint ep);
+	void AsyncConnect(std::string ip, unsigned int port);
 	void AsyncSend(Buffer& buf);
 	void Close();
 

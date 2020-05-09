@@ -9,16 +9,18 @@ using boost::system::error_code;
 
 using namespace std::placeholders;
 
-void DefaultMessageCallback(const TcpConnectionPtr&, Buffer&) {
-	log(debug) << "tcp connection default message call back.";
+void x::net::DefaultMessageCallback(const TcpConnectionPtr&, Buffer&) {
+	log(debug) << "default message call back.";
 }
-
+void x::net::DefaultConnectionCallback(const TcpConnectionPtr&) {
+	log(debug) << "default connection call back.";
+}
 /// TcpConnection
 using boost::system::error_code;
 
-TcpConnection::TcpConnection(SocketPtr&& pSock) :
+TcpConnection::TcpConnection(SocketPtr pSock) :
 	_pSock(pSock),
-	_messageCallback(std::bind(DefaultMessageCallback, std::placeholders::_1, std::placeholders::_2)) {
+	_messageCallback(std::bind(&DefaultMessageCallback, std::placeholders::_1, std::placeholders::_2)) {
 }
 
 void TcpConnection::Established() {
@@ -126,14 +128,13 @@ void TcpServer::AsyncListenInLoop() {
 }
 
 /// TcpClient
-TcpClient::TcpClient(std::string name) :
-	_name(name) {
+TcpClient::TcpClient(std::string name) : TcpServices(name) {
 
 }
 
-void TcpClient::AsyncConnect(tcp::endpoint end) {
+void TcpClient::AsyncConnect(std::string ip, unsigned int port) {
 	SocketPtr pSock = std::make_shared<tcp::socket>(_io_context);
-	pSock->async_connect(end, [this, pSock](const error_code& code) {
+	pSock->async_connect(tcp::endpoint(boost::asio::ip::address::from_string(ip), port), [this, pSock](const error_code& code) {
 		if (code) {
 			log(error) << "connect failure, error message: " << code.message();
 			return;

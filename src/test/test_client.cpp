@@ -18,15 +18,15 @@ public:
 
 		_pTcpClient = std::make_shared<TcpClient>(name);
 		_pTcpClient->SetMessageCallback(std::bind(&ProtobufCodec::RecvMessage, &_codec, std::placeholders::_1, std::placeholders::_2));
-		_pTcpClient->SetConnectionCallback(std::bind(&TcpClient::OnConnection, this, std::placeholders::_1));
+		_pTcpClient->SetConnectionCallback(std::bind(&TestClient::OnConnection, this, std::placeholders::_1));
 
-		_dispatcher.RegisterMessageCallback(SearchRequest::descriptor(), std::bind(&TcpClient::onSearchRequest, this, std::placeholders::_1, std::placeholders::_2));
-		_dispatcher.RegisterMessageCallback(SearchResponse::descriptor(), std::bind(&TcpClient::onSearchResponse, this, std::placeholders::_1, std::placeholders::_2));
+		_dispatcher.RegisterMessageCallback(SearchRequest::descriptor(), std::bind(&TestClient::OnSearchRequest, this, std::placeholders::_1, std::placeholders::_2));
+		_dispatcher.RegisterMessageCallback(SearchResponse::descriptor(), std::bind(&TestClient::OnSearchResponse, this, std::placeholders::_1, std::placeholders::_2));
 	}
 
 public:
 	void AsyncConnect(std::string ip, unsigned int port) {
-		if(_pTcpClient) _pTcpClient->AsyncConnect(tcp::endpoint(ip::address::from_string(ip), port));
+		if(_pTcpClient) _pTcpClient->AsyncConnect(ip, port);
 	}
 
 	void Close() {
@@ -40,13 +40,13 @@ public:
 	void DefaultMessageCallback(const TcpConnectionPtr&, const MessagePtr&) {
 		log(debug) << "client default message call back.";
 	}
-	void onSearchRequest(const TcpConnectionPtr&, const MessagePtr&) {
+	void OnSearchRequest(const TcpConnectionPtr&, const MessagePtr&) {
 		log(debug) << "client onSearchRequest.";
 	}
-	void onSearchResponse(const TcpConnectionPtr&, const MessagePtr&) {
+	void OnSearchResponse(const TcpConnectionPtr&, const MessagePtr&) {
 		log(debug) << "client onSearchResponse.";
 	}
-	void onConnection(const TcpConnectionPtr&) {
+	void OnConnection(const TcpConnectionPtr&) {
 		log(debug) << "client onConnection.";
 	}
 
@@ -63,33 +63,40 @@ int main(int argc, char* argv[])
 	try
 	{
 		TestClient client("TestClient");
-		client.Connect("127.0.0.1", 1234);
+		client.AsyncConnect("127.0.0.1", 1234);
 
-		{
-			SearchRequest msg;
-			msg.set_query("captzx");
-			msg.set_page_number(1);
-			msg.set_result_per_page(1);
+		while (1) {
 
-			Buffer buf;
-			ProtobufCodec::PackMessage(buf, msg);
-			using namespace std::chrono_literals;
-			std::cout << "Enter message: len = " << buf.Readable() << std::endl;
+			{
+				auto pMsg = std::make_shared<SearchRequest>();
+				if (pMsg) {
+					pMsg->set_query("captzx");
+					pMsg->set_page_number(1);
+					pMsg->set_result_per_page(1);
+				}
 
-			// client.Send(buffer(buf.ReadPtr(), buf.Readable()));
-			client.AsyncSend(buf);
-			std::this_thread::sleep_for(1s);
-		}
-		{
-			SearchResponse msg;
-			msg.set_result(1);
+				Buffer buf;
+				ProtobufCodec::PackMessage(pMsg, buf);
+				using namespace std::chrono_literals;
+				std::cout << "Enter message: len = " << buf.Readable() << std::endl;
 
-			Buffer buf;
-			ProtobufCodec::PackMessage(buf, msg);
-			using namespace std::chrono_literals;
-			std::cout << "Enter message: len = " << buf.Readable() << std::endl;
+				// client.Send(buffer(buf.ReadPtr(), buf.Readable()));
+				client.AsyncSend(buf);
+				std::this_thread::sleep_for(1s);
+			}
+			{
+				auto pMsg = std::make_shared<SearchResponse>();
+				if (pMsg) {
+					pMsg->set_result(1);
+				}
 
-			client.AsyncSend(buf);
+				Buffer buf;
+				ProtobufCodec::PackMessage(pMsg, buf);
+				using namespace std::chrono_literals;
+				std::cout << "Enter message: len = " << buf.Readable() << std::endl;
+
+				client.AsyncSend(buf);
+			}
 		}
 	}
 	catch (std::exception& e)

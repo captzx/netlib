@@ -65,7 +65,7 @@ MessagePtr ProtobufCodec::CreateMessageByName(const std::string& message_name){
 	const Descriptor* descriptor = DescriptorPool::generated_pool()->FindMessageTypeByName(message_name);
 	if (descriptor){
 		const Message* prototype = MessageFactory::generated_factory()->GetPrototype(descriptor);
-		if (prototype) pMessage.reset(prototype->New(););
+		if (prototype) pMessage.reset(prototype->New());
 	}
 
 	return pMessage;
@@ -84,7 +84,7 @@ void ProtobufCodec::RecvMessage(const TcpConnectionPtr& pConnection, Buffer& buf
 
 		else if (buf.Readable() >= static_cast<size_t>(len + header_len))
 		{
-			MessagePtr message = Parse(buf.ReadPtr() + header_len, len);
+			MessagePtr message = ParseDataPackage(buf.ReadPtr() + header_len, len);
 			_messageCallback(pConnection, message);
 
 			buf.Retrieve(header_len + len);

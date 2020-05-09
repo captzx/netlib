@@ -10,8 +10,8 @@ set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
 set(HEADERS
 	Using.h
 	Buffer.h
-	NetService.h
-	ProtobufHandle.h
+	TcpService.h
+	ProtobufProcess.h
 	)
 set(HEADER_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/../../include)
 install(FILES ${HEADERS} DESTINATION ${HEADER_OUTPUT_PATH}/${TARGETNAME})
@@ -20,8 +20,8 @@ set(INCLUDEDIRS ${HEADER_OUTPUT_PATH})
 include_directories(${INCLUDEDIRS})
 set(SRCS 
     Buffer.cpp
-	NetService.cpp
-	ProtobufHandle.cpp
+	TcpService.cpp
+	ProtobufProcess.cpp
 	)
 add_library(${TARGETNAME} SHARED ${SRCS})
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/../../libs)
