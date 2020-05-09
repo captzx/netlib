@@ -3,10 +3,8 @@
 #include <xtools/Config.h>
 #include <xtools/Singleton.h>
 #include <xnet/Using.h>
-#include <xnet/TcpConnection.h>
-#include <xnet/NetServer.h>
-#include <xnet/ProtobufCodec.h>
-#include <xnet/ProtobufDispatcher.h>
+#include <xnet/TcpService.h>
+#include <xnet/ProtobufProcess.h>
 
 using x::tool::Config;
 using x::tool::Singleton;
@@ -17,8 +15,6 @@ namespace x {
 namespace login {
 
 /// class LoginServer
-using x::net::NetServer;
-using NetServerPtr = std::shared_ptr<NetServer>;
 class LoginServer {
 public:
 	explicit LoginServer(std::string);
@@ -27,12 +23,12 @@ public:
 	void Start();
 
 public:
-	void DefaultMessageCallback(const TcpConnectionPtr&, const MessagePtr&);
 	void onSearchRequest(const TcpConnectionPtr&, const MessagePtr&);
 	void onSearchResponse(const TcpConnectionPtr&, const MessagePtr&);
+	void onConnection(const TcpConnectionPtr&);
 private:
-	NetServerPtr _pTcpServer;
-	ProtobufDispatcher _dispatcher; 
+	TcpServerPtr _pTcpServer;
+	ProtobufDispatcher _dispatcher;
 	ProtobufCodec _codec;
 };
 

@@ -1,14 +1,9 @@
 #include <xtools/Common.h>
-#include <xprotos/login.pb.h>
-#include <xnet/ProtobufCodec.h>
+#include <xnet/ProtobufProcess.h>
 #include <xnet/Buffer.h>
-#include <xnet/TcpClient.h>
-#include <xnet/TcpConnection.h>
+#include <xnet/TcpService.h>
 
-#include <boost/asio.hpp>
-
-using namespace boost::asio;
-using boost::asio::ip::tcp;
+#include <xprotos/login.pb.h>
 
 using namespace x::tool;
 using namespace x::net;
@@ -17,13 +12,21 @@ enum { max_length = 1024 };
 
 class TestClient {
 public:
-	explicit TestClient(std::string name) {
+	explicit TestClient(std::string name) :
+		_dispatcher(std::bind(&TestClient::DefaultMessageCallback, this, std::placeholders::_1, std::placeholders::_2)),
+		_codec(std::bind(&ProtobufDispatcher::RecvMessage, &_dispatcher, std::placeholders::_1, std::placeholders::_2)) {
+
 		_pTcpClient = std::make_shared<TcpClient>(name);
+		_pTcpClient->SetMessageCallback(std::bind(&ProtobufCodec::RecvMessage, &_codec, std::placeholders::_1, std::placeholders::_2));
+		_pTcpClient->SetConnectionCallback(std::bind(&TcpClient::OnConnection, this, std::placeholders::_1));
+
+		_dispatcher.RegisterMessageCallback(SearchRequest::descriptor(), std::bind(&TcpClient::onSearchRequest, this, std::placeholders::_1, std::placeholders::_2));
+		_dispatcher.RegisterMessageCallback(SearchResponse::descriptor(), std::bind(&TcpClient::onSearchResponse, this, std::placeholders::_1, std::placeholders::_2));
 	}
 
 public:
-	void Connect(std::string ip, unsigned int port) {
-		if(_pTcpClient) _pTcpClient->Connect(tcp::endpoint(ip::address::from_string(ip), port));
+	void AsyncConnect(std::string ip, unsigned int port) {
+		if(_pTcpClient) _pTcpClient->AsyncConnect(tcp::endpoint(ip::address::from_string(ip), port));
 	}
 
 	void Close() {
@@ -32,8 +35,25 @@ public:
 	void AsyncSend(Buffer& buf) {
 		if (_pTcpClient) _pTcpClient->AsyncSend(buf);
 	}
+
+public:
+	void DefaultMessageCallback(const TcpConnectionPtr&, const MessagePtr&) {
+		log(debug) << "client default message call back.";
+	}
+	void onSearchRequest(const TcpConnectionPtr&, const MessagePtr&) {
+		log(debug) << "client onSearchRequest.";
+	}
+	void onSearchResponse(const TcpConnectionPtr&, const MessagePtr&) {
+		log(debug) << "client onSearchResponse.";
+	}
+	void onConnection(const TcpConnectionPtr&) {
+		log(debug) << "client onConnection.";
+	}
+
 private:
 	TcpClientPtr _pTcpClient;
+	ProtobufDispatcher _dispatcher;
+	ProtobufCodec _codec;
 };
 
 int main(int argc, char* argv[])
