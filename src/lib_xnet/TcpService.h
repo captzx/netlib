@@ -21,9 +21,12 @@ void DefaultConnectionCallback(const TcpConnectionPtr&);
 /// IOContext
 class IOContext :public NoCopyable {
 public:
-	size_t Run();
+	void Run(); 
+	void RunInThread();
+	void Stop();
 	io_context& Get();
 private:
+	std::thread _ctx_running;
 	io_context _io_context;
 };
 

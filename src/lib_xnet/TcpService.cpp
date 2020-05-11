@@ -16,18 +16,20 @@ void x::net::DefaultConnectionCallback(const TcpConnectionPtr&) {
 	log(debug) << "default connection call back.";
 }
 
-size_t IOContext::Run() {
-	error_code code;
-	size_t count = _io_context.run(code);
-
-	if (code) log(critical) << "io context run failure, error message: " << code.message();
-	else log(normal) << "io context is running, handlers count: " << count;
-
-	return count;
+void IOContext::Run() {
+	_io_context.run();
+}
+void IOContext::RunInThread() {
+	_ctx_running = std::thread([this] { _io_context.run(); });
 }
 
 io_context& IOContext::Get() { 
 	return _io_context; 
+}
+
+void IOContext::Stop() {
+	_io_context.stop();
+	_ctx_running.join();
 }
 
 /// TcpConnection
@@ -58,17 +60,19 @@ void TcpConnection::AsyncReceive() {
 	auto self(shared_from_this());
 	_sock.async_read_some(asio::buffer(_buf.WritePtr(), _buf.Writeable()),
 		[this, self](const error_code& code, size_t len)  -> void { // NOTICE: lambda capture [this, self]
-			if (code) {
-				log(error) << "async receive failure, error message: " << code.message();
-				return;
+			if (len > 0) {
+				this->_buf.MoveWritePtr(len);
+				_messageCallback(shared_from_this(), this->_buf);
+				AsyncReceive();
+				log(debug) << "async receive data from: " << _sock.remote_endpoint() << ", length: " << len;
 			}
-
-			if (len == 0) log(debug) << _sock.remote_endpoint() << " close.";
-			else log(debug) << "async receive data from: " << _sock.remote_endpoint() << ", length: " << len;
-
-			this->_buf.MoveWritePtr(len);
-			_messageCallback(shared_from_this(), this->_buf);
-			AsyncReceive();
+			else if (len == 0) {
+				// _closeCallback(shared_from_this(), this->_buf);
+				log(debug) << _sock.remote_endpoint() << " close.";
+			}
+			else if (code) {
+				log(error) << "async receive failure, error message: " << code.message();
+			}
 		});
 }
 
@@ -122,20 +126,32 @@ void TcpServer::Listen(unsigned int port) {
 		return;
 	}
 
+	boost::asio::socket_base::linger option;
+	_acceptor.get_option(option);
+	bool is_set = option.enabled();
+	if (!is_set) {
+		boost::asio::socket_base::linger option(true, 0);
+		_acceptor.set_option(option);
+		log(debug) << "linger: open?: " << option.enabled() << ", time_out" << option.timeout();;
+	}
+
+	std::this_thread::sleep_for(std::chrono::seconds(5));
+
 	log(normal) << "acceptor listening... port: " << port;
 
 	AsyncListenInLoop();
 }
 
 void TcpServer::AsyncListenInLoop() {
-	tcp::socket sock(_acceptor.get_executor());
-	_acceptor.async_accept(sock, [this, &sock](const error_code& code) {
+	SocketPtr pSock = std::make_shared<tcp::socket>(_acceptor.get_executor());
+	
+	_acceptor.async_accept(*pSock, [this, pSock](const error_code& code) { // pSock: capture by value, keep alive
 			if (code) {
 				log(error) << "async accept failure, error message: " << code.message();
 				return;
 			}
 
-			TcpConnectionPtr pConnection = std::make_shared<TcpConnection>(std::move(sock));
+			TcpConnectionPtr pConnection = std::make_shared<TcpConnection>(std::move(*pSock));
 			pConnection->SetMessageCallback(_messageCallback);
 			_tcpConnections.insert({connection_count++, pConnection});
 			pConnection->Established();
@@ -165,7 +181,6 @@ void TcpClient::AsyncConnect(std::string ip, unsigned int port) {
 
 		_pConnection->SetMessageCallback(_messageCallback);
 		_pConnection->Established();
-		log(error) << "tcp client connect success.";
 		}
 	);
 }

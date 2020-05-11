@@ -65,40 +65,40 @@ int main(int argc, char* argv[])
 		IOContext ctx;
 		TestClient client(ctx, "TestClient");
 		client.AsyncConnect("127.0.0.1", 1234);
-		ctx.Run();
+		ctx.RunInThread();
 
 		while (1) {
 
-			{
-				auto pMsg = std::make_shared<SearchRequest>();
-				if (pMsg) {
-					pMsg->set_query("captzx");
-					pMsg->set_page_number(1);
-					pMsg->set_result_per_page(1);
-				}
+			//{
+			//	auto pMsg = std::make_shared<SearchRequest>();
+			//	if (pMsg) {
+			//		pMsg->set_query("captzx");
+			//		pMsg->set_page_number(1);
+			//		pMsg->set_result_per_page(1);
+			//	}
 
-				Buffer buf;
-				ProtobufCodec::PackMessage(pMsg, buf);
-				// using namespace std::chrono_literals;
-				std::cout << "Enter message: len = " << buf.Readable() << std::endl;
+			//	Buffer buf;
+			//	ProtobufCodec::PackMessage(pMsg, buf);
+			//	// using namespace std::chrono_literals;
+			//	std::cout << "Enter message: len = " << buf.Readable() << std::endl;
 
-				// client.Send(buffer(buf.ReadPtr(), buf.Readable()));
-				client.AsyncSend(buf);
-				std::this_thread::sleep_for(std::chrono::seconds(1));
-			}
-			{
-				auto pMsg = std::make_shared<SearchResponse>();
-				if (pMsg) {
-					pMsg->set_result(1);
-				}
+			//	// client.Send(buffer(buf.ReadPtr(), buf.Readable()));
+			//	client.AsyncSend(buf);
+			//	std::this_thread::sleep_for(std::chrono::seconds(1));
+			//}
+			//{
+			//	auto pMsg = std::make_shared<SearchResponse>();
+			//	if (pMsg) {
+			//		pMsg->set_result(1);
+			//	}
 
-				Buffer buf;
-				ProtobufCodec::PackMessage(pMsg, buf);
-				// using namespace std::chrono_literals;
-				std::cout << "Enter message: len = " << buf.Readable() << std::endl;
+			//	Buffer buf;
+			//	ProtobufCodec::PackMessage(pMsg, buf);
+			//	// using namespace std::chrono_literals;
+			//	std::cout << "Enter message: len = " << buf.Readable() << std::endl;
 
-				client.AsyncSend(buf);
-			}
+			//	client.AsyncSend(buf);
+			//}
 		}
 	}
 	catch (std::exception& e)
