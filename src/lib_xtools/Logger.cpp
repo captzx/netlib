@@ -33,7 +33,7 @@ void x::tool::global_logger_init(const std::string& file) {
 
 	boost::shared_ptr<sinks::text_ostream_backend> backend = boost::make_shared<sinks::text_ostream_backend>();
 	// backend->add_stream(boost::shared_ptr<std::ostream>(&std::clog, boost::null_deleter()));
-	backend->add_stream(boost::shared_ptr<std::ostream>(new std::ofstream(file, std::ios_base::app)));
+	backend->add_stream(boost::shared_ptr<std::ostream>(new std::ofstream(file.c_str(), std::ios_base::app)));
 
 	backend->auto_flush(true);
 

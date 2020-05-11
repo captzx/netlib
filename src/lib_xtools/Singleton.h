@@ -3,14 +3,11 @@
 #include <memory>
 #include <mutex>
 
+#include "Type.h"
+
 namespace x {
 
 namespace tool {
-
-template<typename T, typename... Ts>
-std::unique_ptr<T> make_unique(Ts&& ... params) {
-	return std::unique_ptr<T>(new T(std::forward<Ts>(params)...));
-}
 
 template <typename T>
 class Singleton {
@@ -30,7 +27,7 @@ public:
 
 private:
 	static void Make() {
-		_instance = make_unique<T>();
+		_instance = x::tool::make_unique<T>();
 	}
 
 private:

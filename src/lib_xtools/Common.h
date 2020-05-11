@@ -39,3 +39,12 @@
 #include <sys/timerfd.h>
 
 #include <zlib.h> // adler32
+
+class NoCopyable {
+protected:
+	NoCopyable() {}
+	~NoCopyable() {}
+private:
+	NoCopyable(const NoCopyable&);
+	const NoCopyable& operator=(const NoCopyable&);
+};

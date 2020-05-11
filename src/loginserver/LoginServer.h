@@ -17,7 +17,7 @@ namespace login {
 /// class LoginServer
 class LoginServer {
 public:
-	explicit LoginServer(std::string);
+	explicit LoginServer(IOContext&, std::string);
 
 public:
 	void Start();

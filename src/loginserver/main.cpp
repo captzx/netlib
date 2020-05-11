@@ -4,8 +4,9 @@
 using x::login::LoginServer;
 
 int main() {
-	std::shared_ptr<LoginServer> pLoginServer = std::make_shared<LoginServer>("LoginServer");
+	IOContext ctx;
+	std::shared_ptr<LoginServer> pLoginServer = std::make_shared<LoginServer>(ctx, "LoginServer");
 	if (pLoginServer) pLoginServer->Start();
-
+	ctx.Run();
 	return 0;
 }

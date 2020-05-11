@@ -18,10 +18,19 @@ using ConnectionCallback = std::function<void(const TcpConnectionPtr&)>;
 void DefaultMessageCallback(const TcpConnectionPtr&, Buffer&);
 void DefaultConnectionCallback(const TcpConnectionPtr&);
 
+/// IOContext
+class IOContext :public NoCopyable {
+public:
+	size_t Run();
+	io_context& Get();
+private:
+	io_context _io_context;
+};
+
 /// TcpConnection
 class TcpConnection : public std::enable_shared_from_this<TcpConnection> {
 public:
-	TcpConnection(SocketPtr);
+	TcpConnection(tcp::socket);
 
 public:
 	void Established();
@@ -29,11 +38,13 @@ public:
 	void AsyncSend(Buffer&);
 	void AsyncReceive();
 
+	tcp::socket& GetSocket() { return _sock; }
+
 public:
 	void SetMessageCallback(MessageCallback callback) { _messageCallback = callback; }
 
 private:
-	SocketPtr _pSock;
+	tcp::socket _sock;
 	Buffer _buf;
 
 private:
@@ -41,7 +52,7 @@ private:
 };
 
 /// TcpService
-class TcpServices {
+class TcpServices : public NoCopyable {
 public:
 	explicit TcpServices(std::string name):
 	_name(name),
@@ -59,7 +70,6 @@ public:
 	}
 protected:
 	std::string _name;
-	io_context _io_context;
 
 protected:
 	MessageCallback _messageCallback;
@@ -73,7 +83,7 @@ public:
 	using TcpConnectionManager = std::map<int, TcpConnectionPtr>;
 
 public:
-	explicit TcpServer(std::string);
+	explicit TcpServer(IOContext&, std::string);
 
 public:
 	void Listen(unsigned int port);
@@ -90,7 +100,7 @@ using TcpServerPtr = std::shared_ptr<TcpServer>;
 /// TcpClient
 class TcpClient : public TcpServices {
 public:
-	explicit TcpClient(std::string);
+	explicit TcpClient(IOContext&, std::string);
 
 public:
 	void AsyncConnect(std::string ip, unsigned int port);

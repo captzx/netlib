@@ -6,11 +6,11 @@ using namespace x::login;
 using namespace x::tool;
 
 /// LoginServer
-LoginServer::LoginServer(std::string name):
+LoginServer::LoginServer(IOContext& ctx, std::string name):
 	_dispatcher(std::bind(&LoginServer::DefaultMessageCallback, this, std::placeholders::_1, std::placeholders::_2)),
 	_codec(std::bind(&ProtobufDispatcher::RecvMessage, &_dispatcher, std::placeholders::_1, std::placeholders::_2)) {
 
-	_pTcpServer = std::make_shared<TcpServer>(name);
+	_pTcpServer = std::make_shared<TcpServer>(ctx, name);
 	_pTcpServer->SetMessageCallback(std::bind(&ProtobufCodec::RecvMessage, &_codec, std::placeholders::_1, std::placeholders::_2));
 	_pTcpServer->SetConnectionCallback(std::bind(&LoginServer::OnConnection, this, std::placeholders::_1));
 

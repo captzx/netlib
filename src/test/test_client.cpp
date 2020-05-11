@@ -12,11 +12,11 @@ enum { max_length = 1024 };
 
 class TestClient {
 public:
-	explicit TestClient(std::string name) :
+	explicit TestClient(IOContext& ctx, std::string name) :
 		_dispatcher(std::bind(&TestClient::DefaultMessageCallback, this, std::placeholders::_1, std::placeholders::_2)),
 		_codec(std::bind(&ProtobufDispatcher::RecvMessage, &_dispatcher, std::placeholders::_1, std::placeholders::_2)) {
 
-		_pTcpClient = std::make_shared<TcpClient>(name);
+		_pTcpClient = std::make_shared<TcpClient>(ctx, name);
 		_pTcpClient->SetMessageCallback(std::bind(&ProtobufCodec::RecvMessage, &_codec, std::placeholders::_1, std::placeholders::_2));
 		_pTcpClient->SetConnectionCallback(std::bind(&TestClient::OnConnection, this, std::placeholders::_1));
 
@@ -62,8 +62,10 @@ int main(int argc, char* argv[])
 
 	try
 	{
-		TestClient client("TestClient");
+		IOContext ctx;
+		TestClient client(ctx, "TestClient");
 		client.AsyncConnect("127.0.0.1", 1234);
+		ctx.Run();
 
 		while (1) {
 
@@ -77,12 +79,12 @@ int main(int argc, char* argv[])
 
 				Buffer buf;
 				ProtobufCodec::PackMessage(pMsg, buf);
-				using namespace std::chrono_literals;
+				// using namespace std::chrono_literals;
 				std::cout << "Enter message: len = " << buf.Readable() << std::endl;
 
 				// client.Send(buffer(buf.ReadPtr(), buf.Readable()));
 				client.AsyncSend(buf);
-				std::this_thread::sleep_for(1s);
+				std::this_thread::sleep_for(std::chrono::seconds(1));
 			}
 			{
 				auto pMsg = std::make_shared<SearchResponse>();
@@ -92,7 +94,7 @@ int main(int argc, char* argv[])
 
 				Buffer buf;
 				ProtobufCodec::PackMessage(pMsg, buf);
-				using namespace std::chrono_literals;
+				// using namespace std::chrono_literals;
 				std::cout << "Enter message: len = " << buf.Readable() << std::endl;
 
 				client.AsyncSend(buf);

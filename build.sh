@@ -2,7 +2,7 @@
 
 cd ~/netlib
 if [ ! -d "build" ]; then
-	make build
+	mkdir build
 else
 	cd build
 	cmake ..
