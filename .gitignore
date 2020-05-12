@@ -17,7 +17,6 @@ cscope*
 functions
 tags
 upcs.sh
-proto/*.cc
 bl
 
 #

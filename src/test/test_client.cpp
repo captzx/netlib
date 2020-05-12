@@ -30,7 +30,9 @@ public:
 	}
 
 	void Close() {
-		if (_pTcpClient) _pTcpClient->Close();
+		if (_pTcpClient) {
+			_pTcpClient->Close();
+		}
 	}
 	void AsyncSend(Buffer& buf) {
 		if (_pTcpClient) _pTcpClient->AsyncSend(buf);
@@ -42,6 +44,7 @@ public:
 	}
 	void OnSearchRequest(const TcpConnectionPtr&, const MessagePtr&) {
 		log(debug) << "client onSearchRequest.";
+		// Close();
 	}
 	void OnSearchResponse(const TcpConnectionPtr&, const MessagePtr&) {
 		log(debug) << "client onSearchResponse.";
@@ -67,46 +70,26 @@ int main(int argc, char* argv[])
 		client.AsyncConnect("127.0.0.1", 1234);
 		ctx.RunInThread();
 
-		while (1) {
+		while (ctx.IsRunning()) {
 
-			//{
-			//	auto pMsg = std::make_shared<SearchRequest>();
-			//	if (pMsg) {
-			//		pMsg->set_query("captzx");
-			//		pMsg->set_page_number(1);
-			//		pMsg->set_result_per_page(1);
-			//	}
-
-			//	Buffer buf;
-			//	ProtobufCodec::PackMessage(pMsg, buf);
-			//	// using namespace std::chrono_literals;
-			//	std::cout << "Enter message: len = " << buf.Readable() << std::endl;
-
-			//	// client.Send(buffer(buf.ReadPtr(), buf.Readable()));
-			//	client.AsyncSend(buf);
-			//	std::this_thread::sleep_for(std::chrono::seconds(1));
-			//}
-			//{
-			//	auto pMsg = std::make_shared<SearchResponse>();
-			//	if (pMsg) {
-			//		pMsg->set_result(1);
-			//	}
-
-			//	Buffer buf;
-			//	ProtobufCodec::PackMessage(pMsg, buf);
-			//	// using namespace std::chrono_literals;
-			//	std::cout << "Enter message: len = " << buf.Readable() << std::endl;
-
-			//	client.AsyncSend(buf);
-			//}
+			using namespace std::chrono_literals;
+			std::this_thread::sleep_for(2s);
+			auto pMsg = std::make_shared<SearchRequest>();
+			if (pMsg) {
+				pMsg->set_query("captzx");
+				pMsg->set_page_number(1);
+				pMsg->set_result_per_page(1); 
+				Buffer buf;
+				ProtobufCodec::PackMessage(pMsg, buf);
+				client.AsyncSend(buf);
+				std::cout << "Enter message: len = " << buf.Readable() << std::endl;
+			}
 		}
 	}
 	catch (std::exception& e)
 	{
 		std::cerr << "Exception: " << e.what() << "\n";
 	}
-
-	// global_logger_stop2(sink);
 
 	return 0;
 }

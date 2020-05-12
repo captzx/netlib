@@ -26,26 +26,31 @@ void IOContext::RunInThread() {
 io_context& IOContext::Get() { 
 	return _io_context; 
 }
-
+bool IOContext::IsRunning() {
+	return _io_context.stopped() == false;
+}
 void IOContext::Stop() {
 	_io_context.stop();
-	_ctx_running.join();
 }
 
 /// TcpConnection
 TcpConnection::TcpConnection(tcp::socket sock) :
+	_id(0),
 	_sock(std::move(sock)),
 	_messageCallback(std::bind(&DefaultMessageCallback, std::placeholders::_1, std::placeholders::_2)) {
 }
 
+TcpConnection::~TcpConnection() {
+	log(debug) << "~TcpConnection::TcpConnection";
+}
+
 void TcpConnection::Established() {
-	log(debug) << "tcp make establish, remote endPoint: " << _sock.remote_endpoint() << ".";
+	log(debug) << "tcp make establish, remote end point: " << _sock.remote_endpoint() << ".";
 	log(debug) << "socket is non-blocking mode? " << _sock.non_blocking() << ".";
 	log(debug) << "socket is open? " << _sock.is_open() << ".";
 	
-	auto self(shared_from_this());
 	_sock.async_wait(tcp::socket::wait_read, // Asynchronously wait for the socket to become ready to read, ready to write, or to have pending error conditions.
-		[this, self](const error_code& code) -> void {
+		[this](const error_code& code) -> void {
 			if (code) {
 				log(error) << "async wait failure, error message: " << code.message();
 				return;
@@ -57,9 +62,8 @@ void TcpConnection::Established() {
 }
 
 void TcpConnection::AsyncReceive() {
-	auto self(shared_from_this());
 	_sock.async_read_some(asio::buffer(_buf.WritePtr(), _buf.Writeable()),
-		[this, self](const error_code& code, size_t len)  -> void { // NOTICE: lambda capture [this, self]
+		[this](const error_code& code, size_t len)  -> void { // NOTICE: lambda capture [this, self]
 			if (len > 0) {
 				this->_buf.MoveWritePtr(len);
 				_messageCallback(shared_from_this(), this->_buf);
@@ -67,8 +71,7 @@ void TcpConnection::AsyncReceive() {
 				log(debug) << "async receive data from: " << _sock.remote_endpoint() << ", length: " << len;
 			}
 			else if (len == 0) {
-				// _closeCallback(shared_from_this(), this->_buf);
-				log(debug) << _sock.remote_endpoint() << " close.";
+				Disconnect();
 			}
 			else if (code) {
 				log(error) << "async receive failure, error message: " << code.message();
@@ -77,9 +80,8 @@ void TcpConnection::AsyncReceive() {
 }
 
 void TcpConnection::AsyncSend(Buffer& buf) {
-	auto self(shared_from_this());
 	_sock.async_write_some(asio::buffer(buf.ReadPtr(), buf.Readable()),
-		[this, self](const error_code& code, size_t len) -> void {
+		[this](const error_code& code, size_t len) -> void {
 			if (code) {
 				log(error) << "async send failure, error message: " << code.message();
 				return;
@@ -89,16 +91,17 @@ void TcpConnection::AsyncSend(Buffer& buf) {
 		});
 }
 
-void TcpConnection::Close() {
+void TcpConnection::Disconnect() {
+	log(debug) << "tcp disconnect, remote end point: " << _sock.remote_endpoint() << ".";
+	_sock.cancel(); // mark
+	_sock.shutdown(tcp::socket::shutdown_both);
 	_sock.close();
-
-	log(normal) << "tcp connection close.";
+	_closeCallback(shared_from_this());
 }
 
 /// TcpServer
-int connection_count = 0;
-
 TcpServer::TcpServer(IOContext& ctx, std::string name): TcpServices(name),
+	_counter(0),
 	_acceptor(ctx.Get()) {
 	
 }
@@ -142,6 +145,17 @@ void TcpServer::Listen(unsigned int port) {
 	AsyncListenInLoop();
 }
 
+void TcpServer::RemoveConnection(const TcpConnectionPtr& pConnection) {
+	// TcpConnectionPtr pGuard(pConnection);
+
+	auto it = _tcpConnections.find(pConnection->GetID());
+	if (it != _tcpConnections.end()) {
+		assert(pConnection == it->second);
+
+		_tcpConnections.erase(pConnection->GetID());
+	}
+}
+
 void TcpServer::AsyncListenInLoop() {
 	SocketPtr pSock = std::make_shared<tcp::socket>(_acceptor.get_executor());
 	
@@ -152,9 +166,11 @@ void TcpServer::AsyncListenInLoop() {
 			}
 
 			TcpConnectionPtr pConnection = std::make_shared<TcpConnection>(std::move(*pSock));
+			pConnection->SetID(_counter);
 			pConnection->SetMessageCallback(_messageCallback);
-			_tcpConnections.insert({connection_count++, pConnection});
+			pConnection->SetCloseCallback(std::bind(&TcpServer::RemoveConnection, this, _1));
 			pConnection->Established();
+			_tcpConnections.insert({ _counter++, pConnection });
 
 			_connectionCallback(pConnection);
 
@@ -164,8 +180,9 @@ void TcpServer::AsyncListenInLoop() {
 }
 
 /// TcpClient
-TcpClient::TcpClient(IOContext& ctx, std::string name) : 
+TcpClient::TcpClient(IOContext& ctx, std::string name) :
 	TcpServices(name),
+	_ctx(ctx),
 	_pConnection(std::make_shared<TcpConnection>(std::move(tcp::socket(ctx.Get())))) {
 
 }
@@ -180,13 +197,25 @@ void TcpClient::AsyncConnect(std::string ip, unsigned int port) {
 		}
 
 		_pConnection->SetMessageCallback(_messageCallback);
+		_pConnection->SetCloseCallback(std::bind(&TcpClient::DestroyConnection, this, _1));
 		_pConnection->Established();
 		}
 	);
 }
 
 void TcpClient::Close() {
-	if (_pConnection) _pConnection->Close();
+	if (_pConnection) {
+		_pConnection->Disconnect();
+		_ctx.Stop();
+	}
+}
+
+void TcpClient::DestroyConnection(const TcpConnectionPtr& pConnection) {
+	assert(pConnection == _pConnection);
+
+	_pConnection.reset();
+
+	log(debug) << "removed connection, strong ref: " << pConnection.use_count();
 }
 
 void TcpClient::AsyncSend(Buffer & buf) {

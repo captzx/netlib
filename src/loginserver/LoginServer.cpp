@@ -28,8 +28,26 @@ void LoginServer::DefaultMessageCallback(const TcpConnectionPtr&, const MessageP
 	log(debug) << "login server default message call back.";
 }
 
-void LoginServer::OnSearchRequest(const TcpConnectionPtr&, const MessagePtr&) {
-	log(debug) << "on SearchRequest.";
+void LoginServer::OnSearchRequest(const TcpConnectionPtr& pConnection, const MessagePtr& pMessage) {
+	log(debug) << "on SearchRequest. connection strong ref: " << pConnection.use_count();
+
+	auto pMsg = std::dynamic_pointer_cast<SearchRequest>(pMessage);
+	log(debug) << "SearchRequest query: ." << pMsg->query();
+	log(debug) << "SearchRequest page_number: " << pMsg->page_number();
+	log(debug) << "SearchRequest result_per_page: " << pMsg->result_per_page();
+
+	{
+		auto pMsg = std::make_shared<SearchRequest>();
+		if (pMsg) {
+			pMsg->set_query("captzx");
+			pMsg->set_page_number(1);
+			pMsg->set_result_per_page(1);
+			Buffer buf;
+			ProtobufCodec::PackMessage(pMsg, buf);
+			pConnection->AsyncSend(buf);
+			std::cout << "Enter message: len = " << buf.Readable() << std::endl;
+		}
+	}
 }
 
 void LoginServer::OnSearchResponse(const TcpConnectionPtr&, const MessagePtr&) {

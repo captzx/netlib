@@ -21,13 +21,10 @@ set(CMAKE_BUILD_TYPE "debug")
 set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
 set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
 
-find_package(PkgConfig)
-pkg_search_module(PROTOBUF REQUIRED protobuf)
-
-set(INCLUDEDIRS ./src/common /usr/local/include ${PROJECT_SOURCE_DIR}/include ${PROTOBUF_INCLUDE_DIRS}) 
+set(INCLUDEDIRS ./src/common /usr/local/include ${PROJECT_SOURCE_DIR}/include) 
 include_directories(${INCLUDEDIRS})
 
-set(LIBRARYDIRS /usr/local/lib /usr/local/lib64 ${PROJECT_SOURCE_DIR}/libs ${PROTOBUF_LIBRARIES} )
+set(LIBRARYDIRS /usr/local/lib /usr/local/lib64 ${PROJECT_SOURCE_DIR}/libs)
 link_directories(${LIBRARYDIRS})
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)

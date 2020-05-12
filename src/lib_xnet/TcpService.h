@@ -14,6 +14,7 @@ class TcpConnection;
 using TcpConnectionPtr = std::shared_ptr<TcpConnection>;
 using MessageCallback = std::function<void(const TcpConnectionPtr&, Buffer&)>;
 using ConnectionCallback = std::function<void(const TcpConnectionPtr&)>;
+using CloseCallback = std::function<void(const TcpConnectionPtr&)>;
 
 void DefaultMessageCallback(const TcpConnectionPtr&, Buffer&);
 void DefaultConnectionCallback(const TcpConnectionPtr&);
@@ -25,33 +26,41 @@ public:
 	void RunInThread();
 	void Stop();
 	io_context& Get();
+	bool IsRunning();
 private:
 	std::thread _ctx_running;
 	io_context _io_context;
 };
 
 /// TcpConnection
-class TcpConnection : public std::enable_shared_from_this<TcpConnection> {
+class TcpConnection : public NoCopyable, public std::enable_shared_from_this<TcpConnection> {
 public:
 	TcpConnection(tcp::socket);
-
+	~TcpConnection();
 public:
 	void Established();
-	void Close();
+	void Disconnect();
 	void AsyncSend(Buffer&);
 	void AsyncReceive();
 
 	tcp::socket& GetSocket() { return _sock; }
 
 public:
-	void SetMessageCallback(MessageCallback callback) { _messageCallback = callback; }
+	void SetID(unsigned int id) { _id = id; }
+	unsigned int GetID() { return _id; }
 
+public:
+	void SetMessageCallback(MessageCallback callback) { _messageCallback = callback; }
+	void SetCloseCallback(CloseCallback callback) { _closeCallback = callback; }
+	
 private:
+	unsigned int _id;
 	tcp::socket _sock;
 	Buffer _buf;
 
 private:
 	MessageCallback _messageCallback;
+	CloseCallback _closeCallback;
 };
 
 /// TcpService
@@ -90,11 +99,13 @@ public:
 
 public:
 	void Listen(unsigned int port);
+	void RemoveConnection(const TcpConnectionPtr&);
 
 private:
 	void AsyncListenInLoop();
 
 private:
+	int _counter;
 	tcp::acceptor _acceptor;
 	TcpConnectionManager _tcpConnections;
 };
@@ -109,8 +120,9 @@ public:
 	void AsyncConnect(std::string ip, unsigned int port);
 	void AsyncSend(Buffer& buf);
 	void Close();
-
+	void DestroyConnection(const TcpConnectionPtr&);
 private:
+	IOContext& _ctx;
 	TcpConnectionPtr _pConnection;
 };
 using TcpClientPtr = std::shared_ptr<TcpClient>;
