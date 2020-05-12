@@ -44,7 +44,6 @@ public:
 	}
 	void OnSearchRequest(const TcpConnectionPtr&, const MessagePtr&) {
 		log(debug) << "client onSearchRequest.";
-		// Close();
 	}
 	void OnSearchResponse(const TcpConnectionPtr&, const MessagePtr&) {
 		log(debug) << "client onSearchResponse.";
@@ -70,21 +69,22 @@ int main(int argc, char* argv[])
 		client.AsyncConnect("127.0.0.1", 1234);
 		ctx.RunInThread();
 
-		while (ctx.IsRunning()) {
-
-			using namespace std::chrono_literals;
-			std::this_thread::sleep_for(2s);
+		char line[20];
+		while (std::cin.getline(line, 20)) {
 			auto pMsg = std::make_shared<SearchRequest>();
 			if (pMsg) {
 				pMsg->set_query("captzx");
 				pMsg->set_page_number(1);
-				pMsg->set_result_per_page(1); 
+				pMsg->set_result_per_page(1);
 				Buffer buf;
 				ProtobufCodec::PackMessage(pMsg, buf);
 				client.AsyncSend(buf);
 				std::cout << "Enter message: len = " << buf.Readable() << std::endl;
 			}
 		}
+
+		client.Close();
+		ctx.Stop();
 	}
 	catch (std::exception& e)
 	{

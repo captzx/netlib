@@ -30,7 +30,9 @@ bool IOContext::IsRunning() {
 	return _io_context.stopped() == false;
 }
 void IOContext::Stop() {
-	_io_context.stop();
+	if (_ctx_running.joinable()) {
+		_ctx_running.join();
+	}
 }
 
 /// TcpConnection
@@ -64,6 +66,12 @@ void TcpConnection::Established() {
 void TcpConnection::AsyncReceive() {
 	_sock.async_read_some(asio::buffer(_buf.WritePtr(), _buf.Writeable()),
 		[this](const error_code& code, size_t len)  -> void { // NOTICE: lambda capture [this, self]
+			if (code) {
+				log(error) << "async receive failure, error message: " << code.message();
+				Disconnect();
+				return;
+			}
+
 			if (len > 0) {
 				this->_buf.MoveWritePtr(len);
 				_messageCallback(shared_from_this(), this->_buf);
@@ -72,9 +80,6 @@ void TcpConnection::AsyncReceive() {
 			}
 			else if (len == 0) {
 				Disconnect();
-			}
-			else if (code) {
-				log(error) << "async receive failure, error message: " << code.message();
 			}
 		});
 }
@@ -168,7 +173,7 @@ void TcpServer::AsyncListenInLoop() {
 			TcpConnectionPtr pConnection = std::make_shared<TcpConnection>(std::move(*pSock));
 			pConnection->SetID(_counter);
 			pConnection->SetMessageCallback(_messageCallback);
-			pConnection->SetCloseCallback(std::bind(&TcpServer::RemoveConnection, this, _1));
+			pConnection->SetCloseCallback(std::bind(&TcpServer::RemoveConnection, this, std::placeholders::_1));
 			pConnection->Established();
 			_tcpConnections.insert({ _counter++, pConnection });
 
@@ -197,17 +202,14 @@ void TcpClient::AsyncConnect(std::string ip, unsigned int port) {
 		}
 
 		_pConnection->SetMessageCallback(_messageCallback);
-		_pConnection->SetCloseCallback(std::bind(&TcpClient::DestroyConnection, this, _1));
+		_pConnection->SetCloseCallback(std::bind(&TcpClient::DestroyConnection, this, std::placeholders::_1));
 		_pConnection->Established();
 		}
 	);
 }
 
 void TcpClient::Close() {
-	if (_pConnection) {
-		_pConnection->Disconnect();
-		_ctx.Stop();
-	}
+	if (_pConnection) _pConnection->Disconnect();
 }
 
 void TcpClient::DestroyConnection(const TcpConnectionPtr& pConnection) {
