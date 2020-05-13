@@ -145,22 +145,22 @@ void TcpServer::Listen(unsigned int port) {
 		return;
 	}
 
-	boost::asio::socket_base::linger option;
-	_acceptor.get_option(option);
-	bool is_set = option.enabled();
-	if (!is_set) {
-		boost::asio::socket_base::linger option(true, 0);
-		_acceptor.set_option(option);
-		log(debug) << "linger: open?: " << option.enabled() << ", time_out" << option.timeout();
-	}
+	//boost::asio::socket_base::linger option;
+	//_acceptor.get_option(option);
+	//bool is_set = option.enabled();
+	//if (!is_set) {
+	//	boost::asio::socket_base::linger option(true, 0);
+	//	_acceptor.set_option(option);
+	//	log(debug) << "linger: open?: " << option.enabled() << ", time_out" << option.timeout();
+	//}
 
-	std::this_thread::sleep_for(std::chrono::seconds(5)); // test linger 
+	//std::this_thread::sleep_for(std::chrono::seconds(5)); // test linger 
 
 	log(normal) << "acceptor listening... port: " << port;
 
 	AsyncListenInLoop();
 
-	_heartTimer.expires_from_now(boost::posix_time::seconds(_heartbeatPeriod));
+	_heartTimer.expires_from_now(boost::posix_time::seconds(0));
 	AsyncHeartBeatInLoop();
 }
 
@@ -177,8 +177,8 @@ void TcpServer::RemoveConnection(const TcpConnectionPtr& pConnection) {
 
 void TcpServer::CheckHeartBeat() {
 	unsigned int now = GetSystemTime();
-	for (auto it : _tcpConnections) {
-		const TcpConnectionPtr& pConnection = it.second;
+	for (auto it = _tcpConnections.begin(); it != _tcpConnections.end();) {
+		const TcpConnectionPtr& pConnection = it->second;
 		if (pConnection) {
 			unsigned int last = pConnection->GetLastHeartBeatTime();
 			if (now > last + _heartbeatPeriod * 2) {
@@ -186,7 +186,10 @@ void TcpServer::CheckHeartBeat() {
 					pConnection->Disconnect();
 				}
 			}
-			else _heartCallback(pConnection);
+			else {
+				++it;
+				_heartCallback(pConnection);
+			}
 		}
 	}
 }

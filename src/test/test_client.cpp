@@ -20,9 +20,9 @@ public:
 		_pTcpClient->SetMessageCallback(std::bind(&ProtobufCodec::RecvMessage, &_codec, std::placeholders::_1, std::placeholders::_2));
 		_pTcpClient->SetConnectionCallback(std::bind(&TestClient::OnConnection, this, std::placeholders::_1));
 
-		_dispatcher.RegisterMessageCallback(SearchRequest::descriptor(), std::bind(&TestClient::OnSearchRequest, this, std::placeholders::_1, std::placeholders::_2));
-		_dispatcher.RegisterMessageCallback(SearchResponse::descriptor(), std::bind(&TestClient::OnSearchResponse, this, std::placeholders::_1, std::placeholders::_2));
-		_dispatcher.RegisterMessageCallback(HeartBeat::descriptor(), std::bind(&TestClient::OnHertBeat, this, std::placeholders::_1, std::placeholders::_2));
+		_dispatcher.RegisterMessageCallback<SearchRequest>(std::bind(&TestClient::OnSearchRequest, this, std::placeholders::_1, std::placeholders::_2));
+		_dispatcher.RegisterMessageCallback<SearchResponse>(std::bind(&TestClient::OnSearchResponse, this, std::placeholders::_1, std::placeholders::_2));
+		_dispatcher.RegisterMessageCallback<HeartBeat>(std::bind(&TestClient::OnHeartBeat, this, std::placeholders::_1, std::placeholders::_2));
 	}
 
 public:
@@ -47,35 +47,28 @@ public:
 	void DefaultMessageCallback(const TcpConnectionPtr&, const MessagePtr&) {
 		log(debug) << "client default message call back.";
 	}
-	void OnSearchRequest(const TcpConnectionPtr&, const MessagePtr&) {
+	void OnSearchRequest(const TcpConnectionPtr&, const std::shared_ptr<SearchRequest>&) {
 		log(debug) << "client onSearchRequest.";
 	}
-	void OnSearchResponse(const TcpConnectionPtr&, const MessagePtr&) {
+	void OnSearchResponse(const TcpConnectionPtr&, const std::shared_ptr<SearchResponse>&) {
 		log(debug) << "client onSearchResponse.";
 	}
 	void OnConnection(const TcpConnectionPtr&) {
 		log(debug) << "client onConnection.";
 	}
-	void OnHertBeat(const TcpConnectionPtr& pConnection, const MessagePtr& pMessage) {
-		auto pMsg = std::dynamic_pointer_cast<HeartBeat>(pMessage);
-		
+	void OnHeartBeat(const TcpConnectionPtr& pConnection, const std::shared_ptr<HeartBeat>& pMessage) {
 		unsigned int now = GetSystemTime();
-		int diff = pMsg->time() - now;
+		int diff = pMessage->time() - now;
 
 		log(debug) << "recv heart beat: " << now <<", diff: " << diff;
 
 		pConnection->SetLastHeartBeatTime(now);
 
-		{
-			auto pSend = std::make_shared<HeartBeat>();
-			if (pSend) {
-				pSend->set_time(now);
+		pMessage->set_time(now);
 
-				Buffer buf;
-				ProtobufCodec::PackMessage(pSend, buf);
-				pConnection->AsyncSend(buf);
-			}
-		}
+		Buffer buf;
+		ProtobufCodec::PackMessage(pMessage, buf);
+		pConnection->AsyncSend(buf);
 	}
 
 private:

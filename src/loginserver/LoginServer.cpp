@@ -1,7 +1,5 @@
 #include "LoginServer.h"
 
-#include <xprotos/login.pb.h>
-
 using namespace x::login;
 using namespace x::tool;
 
@@ -15,9 +13,9 @@ LoginServer::LoginServer(IOContext& ctx, std::string name):
 	_pTcpServer->SetConnectionCallback(std::bind(&LoginServer::OnConnection, this, std::placeholders::_1));
 	_pTcpServer->SetHeartCallback(std::bind(&LoginServer::SendHeartBeat, this, std::placeholders::_1));
 
-	_dispatcher.RegisterMessageCallback(SearchRequest::descriptor(), std::bind(&LoginServer::OnSearchRequest, this, std::placeholders::_1, std::placeholders::_2));
-	_dispatcher.RegisterMessageCallback(SearchResponse::descriptor(), std::bind(&LoginServer::OnSearchResponse, this, std::placeholders::_1, std::placeholders::_2));
-	_dispatcher.RegisterMessageCallback(HeartBeat::descriptor(), std::bind(&LoginServer::OnHertBeat, this, std::placeholders::_1, std::placeholders::_2));
+	_dispatcher.RegisterMessageCallback<SearchRequest>(std::bind(&LoginServer::OnSearchRequest, this, std::placeholders::_1, std::placeholders::_2));
+	_dispatcher.RegisterMessageCallback<SearchResponse>(std::bind(&LoginServer::OnSearchResponse, this, std::placeholders::_1, std::placeholders::_2));
+	_dispatcher.RegisterMessageCallback<HeartBeat>(std::bind(&LoginServer::OnHeartBeat, this, std::placeholders::_1, std::placeholders::_2));
 }
 
 void LoginServer::Start() {
@@ -30,31 +28,20 @@ void LoginServer::DefaultMessageCallback(const TcpConnectionPtr&, const MessageP
 	log(debug) << "login server default message call back.";
 }
 
-void LoginServer::OnSearchRequest(const TcpConnectionPtr& pConnection, const MessagePtr& pMessage) {
+void LoginServer::OnSearchRequest(const TcpConnectionPtr& pConnection, const std::shared_ptr<SearchRequest>& pMessage) {
 	log(debug) << "on SearchRequest. connection strong ref: " << pConnection.use_count();
 
-	auto pMsg = std::dynamic_pointer_cast<SearchRequest>(pMessage);
-	log(debug) << "SearchRequest query: ." << pMsg->query();
-	log(debug) << "SearchRequest page_number: " << pMsg->page_number();
-	log(debug) << "SearchRequest result_per_page: " << pMsg->result_per_page();
+	log(debug) << "SearchRequest query: ." << pMessage->query();
+	log(debug) << "SearchRequest page_number: " << pMessage->page_number();
+	log(debug) << "SearchRequest result_per_page: " << pMessage->result_per_page();
 
-	{
-		auto pMsg = std::make_shared<SearchRequest>();
-		if (pMsg) {
-			pMsg->set_query("captzx");
-			pMsg->set_page_number(1);
-			pMsg->set_result_per_page(1);
-			Buffer buf;
-			ProtobufCodec::PackMessage(pMsg, buf);
-			pConnection->AsyncSend(buf);
-			std::cout << "Enter message: len = " << buf.Readable() << std::endl;
-		}
-	}
+	Buffer buf;
+	ProtobufCodec::PackMessage(pMessage, buf);
+	pConnection->AsyncSend(buf);
 }
 
-void LoginServer::OnHertBeat(const TcpConnectionPtr& pConnection, const MessagePtr& pMessage) {
-	auto pMsg = std::dynamic_pointer_cast<HeartBeat>(pMessage);
-	pConnection->SetLastHeartBeatTime(pMsg->time());
+void LoginServer::OnHeartBeat(const TcpConnectionPtr& pConnection, const std::shared_ptr<HeartBeat>& pMessage) {
+	pConnection->SetLastHeartBeatTime(pMessage->time());
 }
 
 void LoginServer::SendHeartBeat(const TcpConnectionPtr& pConnection) {
@@ -69,7 +56,7 @@ void LoginServer::SendHeartBeat(const TcpConnectionPtr& pConnection) {
 	}
 }
 
-void LoginServer::OnSearchResponse(const TcpConnectionPtr&, const MessagePtr&) {
+void LoginServer::OnSearchResponse(const TcpConnectionPtr&, const std::shared_ptr<SearchResponse>&) {
 	log(debug) << "on SearchResponse.";
 }
 

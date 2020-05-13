@@ -108,11 +108,7 @@ void ProtobufDispatcher::RecvMessage(const TcpConnectionPtr& pConnection, const 
 
 	auto it = _callbacks.find(pMessage->GetDescriptor());
 	if (it != _callbacks.end()) 
-		it->second(pConnection, pMessage);
+		it->second->OnMessage(pConnection, pMessage);
 	else 
 		_defaultCallback(pConnection, pMessage);
-}
-
-void ProtobufDispatcher::RegisterMessageCallback(const Descriptor* pDesc, const ProtobufMessageCallback& callback){
-	if (pDesc) _callbacks[pDesc] = callback;
 }

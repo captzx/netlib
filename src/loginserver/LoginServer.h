@@ -6,6 +6,8 @@
 #include <xnet/TcpService.h>
 #include <xnet/ProtobufProcess.h>
 
+#include <xprotos/login.pb.h>
+
 using x::tool::Config;
 using x::tool::Singleton;
 
@@ -23,10 +25,10 @@ public:
 	void Start(); 
 	void SendHeartBeat(const TcpConnectionPtr&);
 public:
-	void OnHertBeat(const TcpConnectionPtr&, const MessagePtr&);
 	void DefaultMessageCallback(const TcpConnectionPtr&, const MessagePtr&);
-	void OnSearchRequest(const TcpConnectionPtr&, const MessagePtr&);
-	void OnSearchResponse(const TcpConnectionPtr&, const MessagePtr&);
+	void OnHeartBeat(const TcpConnectionPtr&, const std::shared_ptr<HeartBeat>&);
+	void OnSearchRequest(const TcpConnectionPtr&, const std::shared_ptr<SearchRequest>&);
+	void OnSearchResponse(const TcpConnectionPtr&, const std::shared_ptr<SearchResponse>&);
 	void OnConnection(const TcpConnectionPtr&);
 private:
 	TcpServerPtr _pTcpServer;

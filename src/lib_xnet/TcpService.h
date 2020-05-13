@@ -75,7 +75,7 @@ class TcpServices : public NoCopyable {
 public:
 	explicit TcpServices(std::string name) :
 	_name(name),
-	_heartbeatPeriod(10), // default heart beat 10s
+	_heartbeatPeriod(3), // default heart beat 10s
 	_messageCallback(std::bind(&DefaultMessageCallback, std::placeholders::_1, std::placeholders::_2)),
 	_connectionCallback(std::bind(&DefaultConnectionCallback, std::placeholders::_1)) {
 
