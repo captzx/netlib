@@ -40,6 +40,13 @@
 
 #include <zlib.h> // adler32
 
+#include "Type.h"
+
+
+namespace x {
+
+namespace tool {
+
 class NoCopyable {
 protected:
 	NoCopyable() {}
@@ -48,3 +55,9 @@ private:
 	NoCopyable(const NoCopyable&);
 	const NoCopyable& operator=(const NoCopyable&);
 };
+
+unsigned int GetSystemTime();
+
+}
+
+}

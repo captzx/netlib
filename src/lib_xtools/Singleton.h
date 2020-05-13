@@ -27,7 +27,7 @@ public:
 
 private:
 	static void Make() {
-		_instance = x::tool::make_unique<T>();
+		_instance = std::make_unique<T>();
 	}
 
 private:

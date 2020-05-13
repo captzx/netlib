@@ -9,3 +9,7 @@ message SearchRequest {
 message SearchResponse {
   uint32 result = 1;
 }
+
+message HeartBeat {
+  uint32 time = 1;
+}

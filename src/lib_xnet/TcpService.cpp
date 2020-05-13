@@ -20,7 +20,9 @@ void IOContext::Run() {
 	_io_context.run();
 }
 void IOContext::RunInThread() {
-	_ctx_running = std::thread([this] { _io_context.run(); });
+	_ctx_running = std::thread([this] { 
+		_io_context.run();
+	});
 }
 
 io_context& IOContext::Get() { 
@@ -39,6 +41,7 @@ void IOContext::Stop() {
 TcpConnection::TcpConnection(tcp::socket sock) :
 	_id(0),
 	_sock(std::move(sock)),
+	_lastHeartBeat(0),
 	_messageCallback(std::bind(&DefaultMessageCallback, std::placeholders::_1, std::placeholders::_2)) {
 }
 
@@ -51,6 +54,9 @@ void TcpConnection::Established() {
 	log(debug) << "socket is non-blocking mode? " << _sock.non_blocking() << ".";
 	log(debug) << "socket is open? " << _sock.is_open() << ".";
 	
+	_state = true;
+	SetLastHeartBeatTime(GetSystemTime());
+
 	_sock.async_wait(tcp::socket::wait_read, // Asynchronously wait for the socket to become ready to read, ready to write, or to have pending error conditions.
 		[this](const error_code& code) -> void {
 			if (code) {
@@ -76,7 +82,6 @@ void TcpConnection::AsyncReceive() {
 				this->_buf.MoveWritePtr(len);
 				_messageCallback(shared_from_this(), this->_buf);
 				AsyncReceive();
-				log(debug) << "async receive data from: " << _sock.remote_endpoint() << ", length: " << len;
 			}
 			else if (len == 0) {
 				Disconnect();
@@ -97,17 +102,23 @@ void TcpConnection::AsyncSend(Buffer& buf) {
 }
 
 void TcpConnection::Disconnect() {
-	log(debug) << "tcp disconnect, remote end point: " << _sock.remote_endpoint() << ".";
+	_state = false;
 	_sock.cancel(); // mark
-	_sock.shutdown(tcp::socket::shutdown_both);
+	// _sock.shutdown(tcp::socket::shutdown_both);
 	_sock.close();
 	_closeCallback(shared_from_this());
-}
+	log(debug) << "tcp disconnect, socket close.";
 
+}
 /// TcpServer
 TcpServer::TcpServer(IOContext& ctx, std::string name): TcpServices(name),
 	_counter(0),
-	_acceptor(ctx.Get()) {
+	_acceptor(ctx.Get()),
+	_heartTimer(ctx.Get()){
+
+}
+
+void TcpServer::Init() {
 	
 }
 
@@ -140,14 +151,17 @@ void TcpServer::Listen(unsigned int port) {
 	if (!is_set) {
 		boost::asio::socket_base::linger option(true, 0);
 		_acceptor.set_option(option);
-		log(debug) << "linger: open?: " << option.enabled() << ", time_out" << option.timeout();;
+		log(debug) << "linger: open?: " << option.enabled() << ", time_out" << option.timeout();
 	}
 
-	std::this_thread::sleep_for(std::chrono::seconds(5));
+	std::this_thread::sleep_for(std::chrono::seconds(5)); // test linger 
 
 	log(normal) << "acceptor listening... port: " << port;
 
 	AsyncListenInLoop();
+
+	_heartTimer.expires_from_now(boost::posix_time::seconds(_heartbeatPeriod));
+	AsyncHeartBeatInLoop();
 }
 
 void TcpServer::RemoveConnection(const TcpConnectionPtr& pConnection) {
@@ -161,6 +175,30 @@ void TcpServer::RemoveConnection(const TcpConnectionPtr& pConnection) {
 	}
 }
 
+void TcpServer::CheckHeartBeat() {
+	unsigned int now = GetSystemTime();
+	for (auto it : _tcpConnections) {
+		const TcpConnectionPtr& pConnection = it.second;
+		if (pConnection) {
+			unsigned int last = pConnection->GetLastHeartBeatTime();
+			if (now > last + _heartbeatPeriod * 2) {
+				if (pConnection->IsConnectioned() ) {
+					pConnection->Disconnect();
+				}
+			}
+			else _heartCallback(pConnection);
+		}
+	}
+}
+void TcpServer::AsyncHeartBeatInLoop() {
+	_heartTimer.async_wait([this](const error_code& ec) {
+			CheckHeartBeat();
+
+			_heartTimer.expires_from_now(boost::posix_time::seconds(_heartbeatPeriod));
+			AsyncHeartBeatInLoop();
+		}
+	);
+}
 void TcpServer::AsyncListenInLoop() {
 	SocketPtr pSock = std::make_shared<tcp::socket>(_acceptor.get_executor());
 	
@@ -192,6 +230,13 @@ TcpClient::TcpClient(IOContext& ctx, std::string name) :
 
 }
 
+bool TcpClient::IsConnectioned() {
+	if (_pConnection) {
+		return _pConnection->IsConnectioned();
+	}
+
+	return false;
+}
 void TcpClient::AsyncConnect(std::string ip, unsigned int port) {
 	tcp::endpoint endpoint = tcp::endpoint(boost::asio::ip::address::from_string(ip), port);
 	_pConnection->GetSocket().async_connect(endpoint,

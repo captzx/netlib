@@ -13,9 +13,11 @@ LoginServer::LoginServer(IOContext& ctx, std::string name):
 	_pTcpServer = std::make_shared<TcpServer>(ctx, name);
 	_pTcpServer->SetMessageCallback(std::bind(&ProtobufCodec::RecvMessage, &_codec, std::placeholders::_1, std::placeholders::_2));
 	_pTcpServer->SetConnectionCallback(std::bind(&LoginServer::OnConnection, this, std::placeholders::_1));
+	_pTcpServer->SetHeartCallback(std::bind(&LoginServer::SendHeartBeat, this, std::placeholders::_1));
 
 	_dispatcher.RegisterMessageCallback(SearchRequest::descriptor(), std::bind(&LoginServer::OnSearchRequest, this, std::placeholders::_1, std::placeholders::_2));
 	_dispatcher.RegisterMessageCallback(SearchResponse::descriptor(), std::bind(&LoginServer::OnSearchResponse, this, std::placeholders::_1, std::placeholders::_2));
+	_dispatcher.RegisterMessageCallback(HeartBeat::descriptor(), std::bind(&LoginServer::OnHertBeat, this, std::placeholders::_1, std::placeholders::_2));
 }
 
 void LoginServer::Start() {
@@ -47,6 +49,23 @@ void LoginServer::OnSearchRequest(const TcpConnectionPtr& pConnection, const Mes
 			pConnection->AsyncSend(buf);
 			std::cout << "Enter message: len = " << buf.Readable() << std::endl;
 		}
+	}
+}
+
+void LoginServer::OnHertBeat(const TcpConnectionPtr& pConnection, const MessagePtr& pMessage) {
+	auto pMsg = std::dynamic_pointer_cast<HeartBeat>(pMessage);
+	pConnection->SetLastHeartBeatTime(pMsg->time());
+}
+
+void LoginServer::SendHeartBeat(const TcpConnectionPtr& pConnection) {
+	auto pSend = std::make_shared<HeartBeat>();
+	if (pSend) {
+		unsigned int now = GetSystemTime();
+		pSend->set_time(now);
+
+		Buffer buf;
+		ProtobufCodec::PackMessage(pSend, buf);
+		pConnection->AsyncSend(buf);
 	}
 }
 

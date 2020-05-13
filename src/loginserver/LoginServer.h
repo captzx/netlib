@@ -20,9 +20,10 @@ public:
 	explicit LoginServer(IOContext&, std::string);
 
 public:
-	void Start();
-
+	void Start(); 
+	void SendHeartBeat(const TcpConnectionPtr&);
 public:
+	void OnHertBeat(const TcpConnectionPtr&, const MessagePtr&);
 	void DefaultMessageCallback(const TcpConnectionPtr&, const MessagePtr&);
 	void OnSearchRequest(const TcpConnectionPtr&, const MessagePtr&);
 	void OnSearchResponse(const TcpConnectionPtr&, const MessagePtr&);
