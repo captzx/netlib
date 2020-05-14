@@ -34,6 +34,7 @@ set(LINUX_LIBS libpthread.so libz.so)
 set(XML_LIBS libtinyxml2.so)
 set(PROTOBUF_LIBS libprotobuf.so)
 set(X_LIBS libxnet.so libxtools.so libxprotos.so)
-set(ALLLIBS ${LINUX_LIBS} ${BOOST_LIBS} ${XML_LIBS} ${PROTOBUF_LIBS} ${X_LIBS})
+set(CRYPTO_LIBS libcryptopp.so)
+set(ALLLIBS ${LINUX_LIBS} ${BOOST_LIBS} ${XML_LIBS} ${PROTOBUF_LIBS}  ${CRYPTO_LIBS} ${X_LIBS})
 
 add_subdirectory(src)

@@ -38,8 +38,7 @@
 
 #include <sys/timerfd.h>
 
-#include <zlib.h> // adler32
-
+// x::tool
 #include "Type.h"
 
 

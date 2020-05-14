@@ -1,16 +1,20 @@
 #include "ProtobufProcess.h"
 
+using namespace CryptoPP;
+
 using namespace boost;
 using namespace x::net;
 using namespace x::tool;
 using namespace google::protobuf;
 
-/// ProtobufCodec
 const static uint32_t HEADER_LEN_SIZE = sizeof(uint32_t);
 const static uint32_t MESSAGE_NAME_LEN_SIZE = sizeof(uint32_t);
-const static uint32_t CHECKSUM_LEN_SIZE = sizeof(uint32_t);
+const static uint32_t CHECKSUM_LEN_SIZE = Adler32::DIGESTSIZE;
 const static int MESSAGE_MIN_LEN = MESSAGE_NAME_LEN_SIZE + CHECKSUM_LEN_SIZE + 2; // MESSAGE_NAME_LEN_SIZE + CHECKSUM_LEN_SIZE + message name len(at least one char + '\n')
 const static int MESSAGE_MAX_LEN = 64 * 1024 * 1024;
+
+/// ProtobufCodec
+Adler32 ProtobufCodec::_adler32;
 
 bool ProtobufCodec::PackMessage(const MessagePtr& pMessage, Buffer& buf) {
 	if (!pMessage) return false;
@@ -30,8 +34,9 @@ bool ProtobufCodec::PackMessage(const MessagePtr& pMessage, Buffer& buf) {
 	}
 	buf.MoveWritePtr(messageLen);
 
-	int checkSum = static_cast<int>(::adler32(1, reinterpret_cast<const Bytef*>(buf.ReadPtr()), static_cast<int>(buf.Readable())));
-	buf.Write(checkSum);
+	byte checkSum[CHECKSUM_LEN_SIZE];
+	_adler32.CalculateDigest(checkSum, reinterpret_cast<const byte*>(buf.ReadPtr()), static_cast<size_t>(buf.Readable()));
+	buf.Write(checkSum, CHECKSUM_LEN_SIZE);
 	assert(buf.Readable() == MESSAGE_NAME_LEN_SIZE + messageNameLen + messageLen + CHECKSUM_LEN_SIZE);
 
 	int32_t headerLen = buf.Readable();
@@ -41,11 +46,11 @@ bool ProtobufCodec::PackMessage(const MessagePtr& pMessage, Buffer& buf) {
 }
 
 MessagePtr ProtobufCodec::ParseDataPackage(const char* buf, uint32_t dataLen) {
-	int expectedCheckSum = 0;
-	std::memcpy(&expectedCheckSum, buf + (dataLen - CHECKSUM_LEN_SIZE), CHECKSUM_LEN_SIZE);
-	int checkSum = static_cast<int>(::adler32(1, reinterpret_cast<const Bytef*>(buf), static_cast<int>(dataLen - CHECKSUM_LEN_SIZE)));
-	if (expectedCheckSum != checkSum) {
-		log(error) << "[ProtobufCodec]parse data failure, error message: check failure! check sum = " << expectedCheckSum << " vs "<< checkSum;
+	byte expectedCheckSum[CHECKSUM_LEN_SIZE], checkSum[CHECKSUM_LEN_SIZE];
+	std::memcpy(expectedCheckSum, buf + (dataLen - CHECKSUM_LEN_SIZE), CHECKSUM_LEN_SIZE);
+	_adler32.CalculateDigest(checkSum, reinterpret_cast<const byte*>(buf), static_cast<size_t>(dataLen - CHECKSUM_LEN_SIZE));
+	if (_adler32.VerifyDigest(expectedCheckSum, checkSum, CHECKSUM_LEN_SIZE)) {
+		log(error) << "[ProtobufCodec]parse data failure, error message: check failure!";
 		return nullptr;
 	}
 
