@@ -19,6 +19,16 @@ public:
 	}
 public:
 	template <typename T>
+	T Peek() {
+		T result = 0;
+		if(Readable() > sizeof(T))
+			std::memcpy(&result, ReadPtr(), sizeof(T));
+
+		return result;
+	}
+
+
+	template <typename T>
 	T Read() {
 		T result = 0;
 		std::memcpy(&result, ReadPtr(), sizeof(T));

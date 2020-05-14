@@ -25,15 +25,15 @@ void LoginServer::Start() {
 }
 
 void LoginServer::DefaultMessageCallback(const TcpConnectionPtr&, const MessagePtr&) {
-	log(debug) << "login server default message call back.";
+	log(debug) << "[LoginServer]login server default message call back.";
 }
 
 void LoginServer::OnSearchRequest(const TcpConnectionPtr& pConnection, const std::shared_ptr<SearchRequest>& pMessage) {
-	log(debug) << "on SearchRequest. connection strong ref: " << pConnection.use_count();
+	log(debug) << "[LoginServer]on SearchRequest. connection strong ref: " << pConnection.use_count();
 
-	log(debug) << "SearchRequest query: ." << pMessage->query();
-	log(debug) << "SearchRequest page_number: " << pMessage->page_number();
-	log(debug) << "SearchRequest result_per_page: " << pMessage->result_per_page();
+	log(debug) << "[LoginServer]SearchRequest query: ." << pMessage->query();
+	log(debug) << "[LoginServer]SearchRequest page_number: " << pMessage->page_number();
+	log(debug) << "[LoginServer]SearchRequest result_per_page: " << pMessage->result_per_page();
 
 	Buffer buf;
 	ProtobufCodec::PackMessage(pMessage, buf);
@@ -57,11 +57,11 @@ void LoginServer::SendHeartBeat(const TcpConnectionPtr& pConnection) {
 }
 
 void LoginServer::OnSearchResponse(const TcpConnectionPtr&, const std::shared_ptr<SearchResponse>&) {
-	log(debug) << "on SearchResponse.";
+	log(debug) << "[LoginServer]on SearchResponse.";
 }
 
 void LoginServer::OnConnection(const TcpConnectionPtr&) {
-	log(debug) << "on Connection.";
+	log(debug) << "[LoginServer]on Connection.";
 }
 
 /// LoginConfig

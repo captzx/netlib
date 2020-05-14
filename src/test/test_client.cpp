@@ -45,22 +45,22 @@ public:
 
 public:
 	void DefaultMessageCallback(const TcpConnectionPtr&, const MessagePtr&) {
-		log(debug) << "client default message call back.";
+		log(debug) << "[TestClient]client default message call back.";
 	}
 	void OnSearchRequest(const TcpConnectionPtr&, const std::shared_ptr<SearchRequest>&) {
-		log(debug) << "client onSearchRequest.";
+		log(debug) << "[TestClient]client onSearchRequest.";
 	}
 	void OnSearchResponse(const TcpConnectionPtr&, const std::shared_ptr<SearchResponse>&) {
-		log(debug) << "client onSearchResponse.";
+		log(debug) << "[TestClient]client onSearchResponse.";
 	}
 	void OnConnection(const TcpConnectionPtr&) {
-		log(debug) << "client onConnection.";
+		log(debug) << "[TestClient]client onConnection.";
 	}
 	void OnHeartBeat(const TcpConnectionPtr& pConnection, const std::shared_ptr<HeartBeat>& pMessage) {
 		unsigned int now = GetSystemTime();
 		int diff = pMessage->time() - now;
 
-		log(debug) << "recv heart beat: " << now <<", diff: " << diff;
+		log(debug) << "[TestClient]recv heart beat: " << now <<", diff: " << diff;
 
 		pConnection->SetLastHeartBeatTime(now);
 

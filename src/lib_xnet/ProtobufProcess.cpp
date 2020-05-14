@@ -6,64 +6,71 @@ using namespace x::tool;
 using namespace google::protobuf;
 
 /// ProtobufCodec
-const static int header_len = sizeof(int32_t);
-const static int message_min_len = 2 * header_len + 2; // nameLen + checkSum + message name(at least one char + '\n')
-const static int message_max_len = 64 * 1024 * 1024;
+const static uint32_t HEADER_LEN_SIZE = sizeof(uint32_t);
+const static uint32_t MESSAGE_NAME_LEN_SIZE = sizeof(uint32_t);
+const static uint32_t CHECKSUM_LEN_SIZE = sizeof(uint32_t);
+const static int MESSAGE_MIN_LEN = MESSAGE_NAME_LEN_SIZE + CHECKSUM_LEN_SIZE + 2; // MESSAGE_NAME_LEN_SIZE + CHECKSUM_LEN_SIZE + message name len(at least one char + '\n')
+const static int MESSAGE_MAX_LEN = 64 * 1024 * 1024;
 
-void ProtobufCodec::PackMessage(const MessagePtr& pMessage, Buffer& buf) {
-	if (!pMessage) return;
+bool ProtobufCodec::PackMessage(const MessagePtr& pMessage, Buffer& buf) {
+	if (!pMessage) return false;
 
-	const std::string& message_name = pMessage->GetTypeName();
-	int32_t message_name_len = static_cast<int32_t>(message_name.size() + 1);
-	buf.Write(message_name_len);
-	buf.Write(message_name.c_str(), message_name_len);
+	const std::string& messageName = pMessage->GetTypeName();
+	uint32_t messageNameLen = static_cast<uint32_t>(messageName.size() + 1); // + '\n'
+	buf.Write(messageNameLen);
+	buf.Write(messageName.c_str(), messageNameLen);
 
-	int message_size = pMessage->ByteSizeLong();
-	buf.EnsureWriteable(message_size);
+	int messageLen = pMessage->ByteSizeLong();
+	buf.EnsureWriteable(messageLen);
 	uint8_t* start = reinterpret_cast<uint8_t*>(buf.WritePtr());
 	uint8_t* end = pMessage->SerializeWithCachedSizesToArray(start);
-	if (end - start != message_size) log(error) << "pack message error, message serialize size not equal.";
-	buf.MoveWritePtr(message_size);
+	if (end - start != messageLen) {
+		log(error) << "[ProtobufCodec]pack message failure, error message: message serialize len != massage len.";
+		return false;
+	}
+	buf.MoveWritePtr(messageLen);
 
-	int32_t checkSum = static_cast<int32_t>(::adler32(1, reinterpret_cast<const Bytef*>(buf.ReadPtr()), static_cast<int>(buf.Readable())));
+	int checkSum = static_cast<int>(::adler32(1, reinterpret_cast<const Bytef*>(buf.ReadPtr()), static_cast<int>(buf.Readable())));
 	buf.Write(checkSum);
-	assert(buf.Readable() == sizeof message_name_len + message_name_len + message_size + sizeof checkSum);
+	assert(buf.Readable() == MESSAGE_NAME_LEN_SIZE + messageNameLen + messageLen + CHECKSUM_LEN_SIZE);
 
-	size_t len = buf.Readable();
-	buf.Prepend(&len, sizeof len);
+	int32_t headerLen = buf.Readable();
+	buf.Prepend(&headerLen, HEADER_LEN_SIZE);
+
+	return true;
 }
 
-MessagePtr ProtobufCodec::ParseDataPackage(const char* buf, int len) {
-	MessagePtr pMessage;
-
-	int32_t expectedCheckSum = 0;
-	std::memcpy(&expectedCheckSum, buf + len - header_len, header_len);
-	int32_t checkSum = static_cast<int32_t>(::adler32(1, reinterpret_cast<const Bytef*>(buf), static_cast<int>(len - header_len)));
+MessagePtr ProtobufCodec::ParseDataPackage(const char* buf, uint32_t dataLen) {
+	int expectedCheckSum = 0;
+	std::memcpy(&expectedCheckSum, buf + (dataLen - CHECKSUM_LEN_SIZE), CHECKSUM_LEN_SIZE);
+	int checkSum = static_cast<int>(::adler32(1, reinterpret_cast<const Bytef*>(buf), static_cast<int>(dataLen - CHECKSUM_LEN_SIZE)));
 	if (expectedCheckSum != checkSum) {
-		log(error) << "protobuf codec parse failure, checksum not correct!";
-		return pMessage;
+		log(error) << "[ProtobufCodec]parse data failure, error message: check failure! check sum = " << expectedCheckSum << " vs "<< checkSum;
+		return nullptr;
 	}
-	
-	int32_t message_name_len = 0;
-	std::memcpy(&message_name_len, buf, header_len);
-	if (message_name_len < 2 || message_name_len > len - 2 * header_len) {
-		log(error) << "protobuf codec parse failure, message name too short(or long)!";
-		return pMessage;
+
+	uint32_t nameLen = 0;
+	std::memcpy(&nameLen, buf, MESSAGE_NAME_LEN_SIZE);
+	if (nameLen < 2 || nameLen > dataLen - (MESSAGE_NAME_LEN_SIZE + CHECKSUM_LEN_SIZE)) {
+		log(error) << "[ProtobufCodec]parse data failure, error message: name len too short(or long)! nameLen =" << nameLen;
+		return nullptr;
 	}
-	std::string message_name(buf + header_len, buf + header_len + message_name_len - 1);
-	pMessage = CreateMessageByName(message_name);
+	std::string messageName(buf + MESSAGE_NAME_LEN_SIZE, buf + MESSAGE_NAME_LEN_SIZE + nameLen - 1);
+	MessagePtr pMessage = CreateMessageByName(messageName);
 	if (pMessage) {
-		const char* data = buf + header_len + message_name_len;
-		int32_t data_len = len - message_name_len - 2 * header_len;
-		if (pMessage->ParseFromArray(data, data_len)) log(debug) << "protobuf codec parse success, get message: \"" << message_name << "\"";
+		const char* messageData = buf + MESSAGE_NAME_LEN_SIZE + nameLen;
+		int messageLen = dataLen - (nameLen + MESSAGE_NAME_LEN_SIZE + CHECKSUM_LEN_SIZE);
+		if (pMessage->ParseFromArray(messageData, messageLen)) {
+			log(debug) << "[ProtobufCodec]parse data success, get message: \"" << messageName << "\"";
+		}
 	}
 
 	return pMessage;
 }
-MessagePtr ProtobufCodec::CreateMessageByName(const std::string& message_name){
+MessagePtr ProtobufCodec::CreateMessageByName(const std::string& messageName) {
 	MessagePtr pMessage;
-	const Descriptor* descriptor = DescriptorPool::generated_pool()->FindMessageTypeByName(message_name);
-	if (descriptor){
+	const Descriptor* descriptor = DescriptorPool::generated_pool()->FindMessageTypeByName(messageName);
+	if (descriptor) {
 		const Message* prototype = MessageFactory::generated_factory()->GetPrototype(descriptor);
 		if (prototype) pMessage.reset(prototype->New());
 	}
@@ -72,43 +79,26 @@ MessagePtr ProtobufCodec::CreateMessageByName(const std::string& message_name){
 }
 
 void ProtobufCodec::RecvMessage(const TcpConnectionPtr& pConnection, Buffer& buf) {
-	log(debug) << "recv data, cur buf readable: " << buf.Readable();
-
-	while (buf.Readable() >= message_min_len + header_len)
-	{
-		const int32_t len = buf.Read<int32_t>();
-		if (len > message_max_len || len < message_min_len)
-		{
-			break;
-		}
-
-		else if (buf.Readable() >= static_cast<size_t>(len + header_len))
-		{
-			MessagePtr message = ParseDataPackage(buf.ReadPtr() + header_len, len);
+	while (buf.Readable() >= MESSAGE_MIN_LEN + HEADER_LEN_SIZE) {
+		const uint32_t messageLen = buf.Peek<uint32_t>();
+		if (messageLen > MESSAGE_MAX_LEN || messageLen < MESSAGE_MIN_LEN) break;
+		
+		if (buf.Readable() >= static_cast<size_t>(messageLen + HEADER_LEN_SIZE)) {
+			MessagePtr message = ParseDataPackage(buf.ReadPtr() + HEADER_LEN_SIZE, messageLen);
 			_messageCallback(pConnection, message);
 
-			buf.Retrieve(header_len + len);
-
+			buf.Retrieve(HEADER_LEN_SIZE + messageLen);
 		}
-		else break;
 	}
 }
 
-void ProtobufCodec::SendMessage(const TcpConnectionPtr& pConnection, const MessagePtr& pMessage) {
-	if (!pConnection || pMessage) return;
-
-	Buffer buf;
-	PackMessage(pMessage, buf);
-	pConnection->AsyncSend(buf);
-}
-
 /// ProtobufDispatcher
-void ProtobufDispatcher::RecvMessage(const TcpConnectionPtr& pConnection, const MessagePtr& pMessage) const{
+void ProtobufDispatcher::RecvMessage(const TcpConnectionPtr& pConnection, const MessagePtr& pMessage) const {
 	if (!pMessage) return;
 
 	auto it = _callbacks.find(pMessage->GetDescriptor());
-	if (it != _callbacks.end()) 
+	if (it != _callbacks.end())
 		it->second->OnMessage(pConnection, pMessage);
-	else 
+	else
 		_defaultCallback(pConnection, pMessage);
 }

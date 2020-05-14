@@ -46,13 +46,13 @@ TcpConnection::TcpConnection(tcp::socket sock) :
 }
 
 TcpConnection::~TcpConnection() {
-	log(debug) << "~TcpConnection::TcpConnection";
+	log(debug) << "[TcpConnection]~TcpConnection::TcpConnection";
 }
 
 void TcpConnection::Established() {
-	log(debug) << "tcp make establish, remote end point: " << _sock.remote_endpoint() << ".";
-	log(debug) << "socket is non-blocking mode? " << _sock.non_blocking() << ".";
-	log(debug) << "socket is open? " << _sock.is_open() << ".";
+	log(debug) << "[TcpConnection]tcp make establish, remote end point: " << _sock.remote_endpoint() << ".";
+	log(debug) << "[TcpConnection]socket is non-blocking mode? " << _sock.non_blocking() << ".";
+	log(debug) << "[TcpConnection]socket is open? " << _sock.is_open() << ".";
 	
 	_state = true;
 	SetLastHeartBeatTime(GetSystemTime());
@@ -60,7 +60,7 @@ void TcpConnection::Established() {
 	_sock.async_wait(tcp::socket::wait_read, // Asynchronously wait for the socket to become ready to read, ready to write, or to have pending error conditions.
 		[this](const error_code& code) -> void {
 			if (code) {
-				log(error) << "async wait failure, error message: " << code.message();
+				log(error) << "[TcpConnection]async wait failure, error message: " << code.message();
 				return;
 			}
 
@@ -71,19 +71,17 @@ void TcpConnection::Established() {
 
 void TcpConnection::AsyncReceive() {
 	_sock.async_read_some(asio::buffer(_buf.WritePtr(), _buf.Writeable()),
-		[this](const error_code& code, size_t len)  -> void { // NOTICE: lambda capture [this, self]
-			if (code) {
-				log(error) << "async receive failure, error message: " << code.message();
-				Disconnect();
-				return;
-			}
-
+		[this](const error_code& code, size_t len)  -> void {
 			if (len > 0) {
 				this->_buf.MoveWritePtr(len);
 				_messageCallback(shared_from_this(), this->_buf);
 				AsyncReceive();
 			}
 			else if (len == 0) {
+				Disconnect();
+			}
+			else if (code) {
+				log(error) << "[TcpConnection]async recv failure, error message: " << code.message();
 				Disconnect();
 			}
 		});
@@ -93,22 +91,23 @@ void TcpConnection::AsyncSend(Buffer& buf) {
 	_sock.async_write_some(asio::buffer(buf.ReadPtr(), buf.Readable()),
 		[this](const error_code& code, size_t len) -> void {
 			if (code) {
-				log(error) << "async send failure, error message: " << code.message();
+				log(error) << "[TcpConnection]async send failure, error message: " << code.message();
 				return;
 			}
 
-			log(debug) << "async send data, len: " << len;
+			// log(debug) << "[TcpConnection]async send data, len: " << len;
 		});
 }
 
 void TcpConnection::Disconnect() {
-	_state = false;
-	_sock.cancel(); // mark
-	// _sock.shutdown(tcp::socket::shutdown_both);
-	_sock.close();
-	_closeCallback(shared_from_this());
-	log(debug) << "tcp disconnect, socket close.";
-
+	if (_state) {
+		_state = false;
+		_sock.cancel(); // mark
+		// _sock.shutdown(tcp::socket::shutdown_both);
+		_sock.close();
+		_closeCallback(shared_from_this());
+		log(debug) << "[TcpConnection]socket close.";
+	}
 }
 /// TcpServer
 TcpServer::TcpServer(IOContext& ctx, std::string name): TcpServices(name),
@@ -124,7 +123,7 @@ void TcpServer::Init() {
 
 void TcpServer::Listen(unsigned int port) {
 	if (port == 0) {
-		log(error) << "acceptor listen failure, error message: port = " << port;
+		log(error) << "[TcpServer]acceptor listen failure, error message: port = 0.";
 		return;
 	}
 
@@ -135,13 +134,13 @@ void TcpServer::Listen(unsigned int port) {
 
 	_acceptor.bind(local, code);
 	if (code) {
-		log(error) << "acceptor bind port " << port << " failure, error message: " << code.message();
+		log(error) << "[TcpServer]acceptor bind port: " << port << " failure, error message: " << code.message();
 		return;
 	}
 
 	_acceptor.listen(asio::socket_base::max_listen_connections, code);
 	if (code) {
-		log(error) << "acceptor listen port " << port << " failure, error code: " << code.message();
+		log(error) << "[TcpServer]acceptor listen port " << port << " failure, error code: " << code.message();
 		return;
 	}
 
@@ -156,7 +155,7 @@ void TcpServer::Listen(unsigned int port) {
 
 	//std::this_thread::sleep_for(std::chrono::seconds(5)); // test linger 
 
-	log(normal) << "acceptor listening... port: " << port;
+	log(normal) << "[TcpServer]acceptor listening... port: " << port;
 
 	AsyncListenInLoop();
 
@@ -165,8 +164,6 @@ void TcpServer::Listen(unsigned int port) {
 }
 
 void TcpServer::RemoveConnection(const TcpConnectionPtr& pConnection) {
-	// TcpConnectionPtr pGuard(pConnection);
-
 	auto it = _tcpConnections.find(pConnection->GetID());
 	if (it != _tcpConnections.end()) {
 		assert(pConnection == it->second);
@@ -183,7 +180,7 @@ void TcpServer::CheckHeartBeat() {
 			unsigned int last = pConnection->GetLastHeartBeatTime();
 			if (now > last + _heartbeatPeriod * 2) {
 				if (pConnection->IsConnectioned() ) {
-					pConnection->Disconnect();
+					pConnection->Disconnect(); // WARNNIGN: use erase()
 				}
 			}
 			else {
@@ -204,10 +201,9 @@ void TcpServer::AsyncHeartBeatInLoop() {
 }
 void TcpServer::AsyncListenInLoop() {
 	SocketPtr pSock = std::make_shared<tcp::socket>(_acceptor.get_executor());
-	
 	_acceptor.async_accept(*pSock, [this, pSock](const error_code& code) { // pSock: capture by value, keep alive
 			if (code) {
-				log(error) << "async accept failure, error message: " << code.message();
+				log(error) << "[TcpServer]async accept failure, error message: " << code.message();
 				return;
 			}
 
@@ -245,7 +241,7 @@ void TcpClient::AsyncConnect(std::string ip, unsigned int port) {
 	_pConnection->GetSocket().async_connect(endpoint,
 		[this](const error_code& code) {
 		if (code) {
-			log(error) << "connect failure, error message: " << code.message();
+			log(error) << "[TcpClient]connect failure, error message: " << code.message();
 			return;
 		}
 
@@ -264,8 +260,6 @@ void TcpClient::DestroyConnection(const TcpConnectionPtr& pConnection) {
 	assert(pConnection == _pConnection);
 
 	_pConnection.reset();
-
-	log(debug) << "removed connection, strong ref: " << pConnection.use_count();
 }
 
 void TcpClient::AsyncSend(Buffer & buf) {
