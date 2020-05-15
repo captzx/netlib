@@ -30,6 +30,7 @@
 #include <boost/log/sources/severity_logger.hpp>
 
 #include <boost/log/sinks/async_frontend.hpp>
+#include <boost/log/utility/manipulators/add_value.hpp>
 
 
 namespace x {
@@ -53,11 +54,12 @@ enum severity_level {
 };
 
 BOOST_LOG_INLINE_GLOBAL_LOGGER_DEFAULT(_g_severity_logger, src::severity_logger<x::tool::severity_level>)
-#define log(_severity_level) BOOST_LOG_SEV(_g_severity_logger::get(), _severity_level)
+#define log(_severity_level) BOOST_LOG_SEV(_g_severity_logger::get(), _severity_level) << logging::add_value("Tag", "Tag")
+// #define log(_severity_level, tag) BOOST_LOG_SEV(_g_severity_logger::get(), _severity_level) << logging::add_value("Tag", tag)
 
 typedef sinks::asynchronous_sink<sinks::text_ostream_backend> sink_t;
 void global_logger_init(const std::string&); 
-
+void global_logger_setlevel(severity_level level);
 std::ostream& operator<< (std::ostream& strm, severity_level level);
 
 } // namespace tool

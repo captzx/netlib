@@ -43,9 +43,14 @@ void x::tool::global_logger_init(const std::string& file) {
 		<< expr::format_date_time<boost::posix_time::ptime>("TimeStamp", "%Y-%m-%d %H:%M:%S ")
 		<< process
 		<< std::setiosflags(std::ios::right) << std::setw(10) << severity << ": "
+		<< expr::if_(expr::has_attr("Tag"))[expr::stream << expr::attr< std::string >("Tag")]
 		<< expr::smessage);
 
 	logging::core::get()->add_sink(sink);
 
 	log(normal) << "logger initialize ... success!";
+}
+
+void x::tool::global_logger_setlevel(severity_level level) {
+	logging::core::get()->set_filter(severity >= level);
 }

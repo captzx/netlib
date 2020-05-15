@@ -60,7 +60,7 @@ public:
 		unsigned int now = GetSystemTime();
 		int diff = pMessage->time() - now;
 
-		log(debug) << "[TestClient]recv heart beat: " << now <<", diff: " << diff;
+		log(normal) << "[TestClient]recv heart beat: " << now <<", diff: " << diff;
 
 		pConnection->SetLastHeartBeatTime(now);
 
@@ -79,7 +79,8 @@ private:
 
 int main(int argc, char* argv[])
 {
-	global_logger_init("./log/client.log");
+	global_logger_init("./log/client.log"); 
+	global_logger_setlevel(normal);
 
 	try
 	{
