@@ -53,14 +53,22 @@ enum severity_level {
 	critical
 };
 
-BOOST_LOG_INLINE_GLOBAL_LOGGER_DEFAULT(_g_severity_logger, src::severity_logger<x::tool::severity_level>)
-#define log(_severity_level) BOOST_LOG_SEV(_g_severity_logger::get(), _severity_level) << logging::add_value("Tag", "Tag")
-// #define log(_severity_level, tag) BOOST_LOG_SEV(_g_severity_logger::get(), _severity_level) << logging::add_value("Tag", tag)
+BOOST_LOG_ATTRIBUTE_KEYWORD(severity, "Severity", severity_level);
+BOOST_LOG_ATTRIBUTE_KEYWORD(process, "Process", std::string);
+BOOST_LOG_ATTRIBUTE_KEYWORD(tag_attr, "Tag", std::string)
 
-typedef sinks::asynchronous_sink<sinks::text_ostream_backend> sink_t;
+BOOST_LOG_INLINE_GLOBAL_LOGGER_DEFAULT(_g_severity_logger, src::severity_logger<x::tool::severity_level>)
+
+#define _log(_severity_level) BOOST_LOG_SEV(_g_severity_logger::get(), _severity_level)
+#define _log_t(_severity_level, _value) BOOST_LOG_SEV(_g_severity_logger::get(), _severity_level) << logging::add_value(tag_attr, _value)
+#define _use_log(_1, _2, who, ...) who
+#define log(...) _use_log(__VA_ARGS__, _log_t, _log, ...)(__VA_ARGS__)
+
 void global_logger_init(const std::string&); 
-void global_logger_setlevel(severity_level level);
+void global_logger_set_filter(const logging::filter&);
 std::ostream& operator<< (std::ostream& strm, severity_level level);
+
+// filter filter;
 
 } // namespace tool
 

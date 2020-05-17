@@ -12,13 +12,15 @@ set(HEADERS
 	Type.h
 	Config.h
 	Logger.h
-	Singleton.h)
+	Singleton.h
+	Crypto.h)
 set(HEADER_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/../../include)
 install(FILES ${HEADERS} DESTINATION ${HEADER_OUTPUT_PATH}/${TARGETNAME})
 
 set(SRCS 
 	Common.cpp
-	Logger.cpp)
+	Logger.cpp
+	Crypto.cpp)
 add_library(${TARGETNAME} SHARED ${SRCS})
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/../../libs)
 install(TARGETS ${TARGETNAME} DESTINATION ${LIBRARY_OUTPUT_PATH})

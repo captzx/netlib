@@ -1,14 +1,22 @@
 syntax = "proto3";
- 
-message Register {
+
+message HeartBeat {
+  uint32 time = 1;
+}
+
+message RequestRsaPublicKey{
+
+}
+
+message ResponseRsaPublicKey{
+	string publickey = 1;
+}
+
+message RequestRegister {
   string account = 1;
   string password = 2;
 }
 
-message SearchResponse {
+message ResponseRegister {
   uint32 result = 1;
-}
-
-message HeartBeat {
-  uint32 time = 1;
 }

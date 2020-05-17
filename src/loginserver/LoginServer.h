@@ -2,6 +2,8 @@
 #include <xtools/Common.h>
 #include <xtools/Config.h>
 #include <xtools/Singleton.h>
+#include <xtools/Crypto.h>
+
 #include <xnet/Using.h>
 #include <xnet/TcpService.h>
 #include <xnet/ProtobufProcess.h>
@@ -23,17 +25,27 @@ public:
 
 public:
 	void Start(); 
-	void SendHeartBeat(const TcpConnectionPtr&);
+	bool SendHeartBeat(const TcpConnectionPtr&);
+	bool SendRegisterResult(const TcpConnectionPtr& pConnection, int result);
+	
 public:
 	void DefaultMessageCallback(const TcpConnectionPtr&, const MessagePtr&);
-	void OnHeartBeat(const TcpConnectionPtr&, const std::shared_ptr<HeartBeat>&);
-	void OnSearchRequest(const TcpConnectionPtr&, const std::shared_ptr<SearchRequest>&);
-	void OnSearchResponse(const TcpConnectionPtr&, const std::shared_ptr<SearchResponse>&);
 	void OnConnection(const TcpConnectionPtr&);
+	void OnHeartBeat(const TcpConnectionPtr&, const std::shared_ptr<HeartBeat>&);
+	void OnRequestRegister(const TcpConnectionPtr&, const std::shared_ptr<RequestRegister>&);
+	void OnRequestRsaPublicKey(const TcpConnectionPtr&, const std::shared_ptr<RequestRsaPublicKey>&);
+
+public:
+	bool VerifyPassword(const std::string& account, const std::string& password);
+	bool VerifyAccount(const std::string& account);
+	bool SaveAccount(const std::string& account, const std::string& password);
+
 private:
 	TcpServerPtr _pTcpServer;
 	ProtobufDispatcher _dispatcher;
 	ProtobufCodec _codec;
+	std::string _private_key;
+	std::string _public_key;
 };
 
 /// class LoginConfig

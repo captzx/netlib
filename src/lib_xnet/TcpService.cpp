@@ -46,13 +46,13 @@ TcpConnection::TcpConnection(tcp::socket sock) :
 }
 
 TcpConnection::~TcpConnection() {
-	log(debug) << "[TcpConnection]~TcpConnection::TcpConnection";
+	log(debug, "TcpConnection") << "~TcpConnection::TcpConnection";
 }
 
 void TcpConnection::Established() {
-	log(debug) << "[TcpConnection]tcp make establish, remote end point: " << _sock.remote_endpoint() << ".";
-	log(debug) << "[TcpConnection]socket is non-blocking mode? " << _sock.non_blocking() << ".";
-	log(debug) << "[TcpConnection]socket is open? " << _sock.is_open() << ".";
+	log(debug, "TcpConnection") << "tcp make establish, remote end point: " << _sock.remote_endpoint() << ".";
+	log(debug, "TcpConnection") << "socket is non-blocking mode? " << _sock.non_blocking() << ".";
+	log(debug, "TcpConnection") << "socket is open? " << _sock.is_open() << ".";
 	
 	_state = true;
 	SetLastHeartBeatTime(GetSystemTime());
@@ -60,7 +60,7 @@ void TcpConnection::Established() {
 	_sock.async_wait(tcp::socket::wait_read, // Asynchronously wait for the socket to become ready to read, ready to write, or to have pending error conditions.
 		[this](const error_code& code) -> void {
 			if (code) {
-				log(error) << "[TcpConnection]async wait failure, error message: " << code.message();
+				log(error, "TcpConnection") << "async wait failure, error message: " << code.message();
 				return;
 			}
 
@@ -76,12 +76,14 @@ void TcpConnection::AsyncReceive() {
 				this->_buf.MoveWritePtr(len);
 				_messageCallback(shared_from_this(), this->_buf);
 				AsyncReceive();
+
+				log(debug) << "[TcpConnection]async recv data, len: " << len;
 			}
 			else if (len == 0) {
 				Disconnect();
 			}
 			else if (code) {
-				log(error) << "[TcpConnection]async recv failure, error message: " << code.message();
+				log(error, "TcpConnection") << "async recv failure, error message: " << code.message();
 				Disconnect();
 			}
 		});
@@ -91,11 +93,11 @@ void TcpConnection::AsyncSend(Buffer& buf) {
 	_sock.async_write_some(asio::buffer(buf.ReadPtr(), buf.Readable()),
 		[this](const error_code& code, size_t len) -> void {
 			if (code) {
-				log(error) << "[TcpConnection]async send failure, error message: " << code.message();
+				log(error, "TcpConnection") << "async send failure, error message: " << code.message();
 				return;
 			}
 
-			// log(debug) << "[TcpConnection]async send data, len: " << len;
+			log(debug) << "[TcpConnection]async send data, len: " << len;
 		});
 }
 
@@ -106,7 +108,7 @@ void TcpConnection::Disconnect() {
 		// _sock.shutdown(tcp::socket::shutdown_both);
 		_sock.close();
 		_closeCallback(shared_from_this());
-		log(debug) << "[TcpConnection]socket close.";
+		log(debug, "TcpConnection") << "socket close.";
 	}
 }
 /// TcpServer
@@ -123,7 +125,7 @@ void TcpServer::Init() {
 
 void TcpServer::Listen(unsigned int port) {
 	if (port == 0) {
-		log(error) << "[TcpServer]acceptor listen failure, error message: port = 0.";
+		log(error, "TcpServer") << "acceptor listen failure, error message: port = 0.";
 		return;
 	}
 
@@ -134,13 +136,13 @@ void TcpServer::Listen(unsigned int port) {
 
 	_acceptor.bind(local, code);
 	if (code) {
-		log(error) << "[TcpServer]acceptor bind port: " << port << " failure, error message: " << code.message();
+		log(error, "TcpServer") << "acceptor bind port: " << port << " failure, error message: " << code.message();
 		return;
 	}
 
 	_acceptor.listen(asio::socket_base::max_listen_connections, code);
 	if (code) {
-		log(error) << "[TcpServer]acceptor listen port " << port << " failure, error code: " << code.message();
+		log(error, "TcpServer") << "acceptor listen port " << port << " failure, error code: " << code.message();
 		return;
 	}
 
@@ -155,7 +157,7 @@ void TcpServer::Listen(unsigned int port) {
 
 	//std::this_thread::sleep_for(std::chrono::seconds(5)); // test linger 
 
-	log(normal) << "[TcpServer]acceptor listening... port: " << port;
+	log(normal, "TcpServer") << "acceptor listening... port: " << port;
 
 	AsyncListenInLoop();
 
@@ -203,7 +205,7 @@ void TcpServer::AsyncListenInLoop() {
 	SocketPtr pSock = std::make_shared<tcp::socket>(_acceptor.get_executor());
 	_acceptor.async_accept(*pSock, [this, pSock](const error_code& code) { // pSock: capture by value, keep alive
 			if (code) {
-				log(error) << "[TcpServer]async accept failure, error message: " << code.message();
+				log(error, "TcpServer") << "async accept failure, error message: " << code.message();
 				return;
 			}
 
@@ -241,7 +243,7 @@ void TcpClient::AsyncConnect(std::string ip, unsigned int port) {
 	_pConnection->GetSocket().async_connect(endpoint,
 		[this](const error_code& code) {
 		if (code) {
-			log(error) << "[TcpClient]connect failure, error message: " << code.message();
+			log(error, "TcpClient") << "connect failure, error message: " << code.message();
 			return;
 		}
 

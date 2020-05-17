@@ -29,7 +29,7 @@ bool ProtobufCodec::PackMessage(const MessagePtr& pMessage, Buffer& buf) {
 	uint8_t* start = reinterpret_cast<uint8_t*>(buf.WritePtr());
 	uint8_t* end = pMessage->SerializeWithCachedSizesToArray(start);
 	if (end - start != messageLen) {
-		log(error) << "[ProtobufCodec]pack message failure, error message: message serialize len != massage len.";
+		log(error, "ProtobufCodec") << "pack message failure, error message: message serialize len != massage len.";
 		return false;
 	}
 	buf.MoveWritePtr(messageLen);
@@ -50,14 +50,14 @@ MessagePtr ProtobufCodec::ParseDataPackage(const char* buf, uint32_t dataLen) {
 	std::memcpy(expectedCheckSum, buf + (dataLen - CHECKSUM_LEN_SIZE), CHECKSUM_LEN_SIZE);
 	_adler32.CalculateDigest(checkSum, reinterpret_cast<const byte*>(buf), static_cast<size_t>(dataLen - CHECKSUM_LEN_SIZE));
 	if (_adler32.VerifyDigest(expectedCheckSum, checkSum, CHECKSUM_LEN_SIZE)) {
-		log(error) << "[ProtobufCodec]parse data failure, error message: check failure!";
+		log(error, "ProtobufCodec") << "parse data failure, error message: check failure!";
 		return nullptr;
 	}
 
 	uint32_t nameLen = 0;
 	std::memcpy(&nameLen, buf, MESSAGE_NAME_LEN_SIZE);
 	if (nameLen < 2 || nameLen > dataLen - (MESSAGE_NAME_LEN_SIZE + CHECKSUM_LEN_SIZE)) {
-		log(error) << "[ProtobufCodec]parse data failure, error message: name len too short(or long)! nameLen =" << nameLen;
+		log(error, "ProtobufCodec") << "parse data failure, error message: name len too short(or long)! nameLen =" << nameLen;
 		return nullptr;
 	}
 	std::string messageName(buf + MESSAGE_NAME_LEN_SIZE, buf + MESSAGE_NAME_LEN_SIZE + nameLen - 1);
@@ -66,7 +66,7 @@ MessagePtr ProtobufCodec::ParseDataPackage(const char* buf, uint32_t dataLen) {
 		const char* messageData = buf + MESSAGE_NAME_LEN_SIZE + nameLen;
 		int messageLen = dataLen - (nameLen + MESSAGE_NAME_LEN_SIZE + CHECKSUM_LEN_SIZE);
 		if (pMessage->ParseFromArray(messageData, messageLen)) {
-			log(debug) << "[ProtobufCodec]parse data success, get message: \"" << messageName << "\"";
+			log(debug, "ProtobufCodec") << "parse data success, get message: \"" << messageName << "\"";
 		}
 	}
 
