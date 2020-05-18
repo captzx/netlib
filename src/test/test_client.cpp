@@ -5,7 +5,8 @@
 
 #include <xtools/Crypto.h>
 
-#include <xprotos/login.pb.h>
+#include <xprotos/Server.pb.h>
+#include <xprotos/Login.pb.h>
 
 using namespace x::tool;
 using namespace x::net;
@@ -52,7 +53,7 @@ public:
 		log(debug, "TestClient") << "client onConnection.";
 	}
 	void OnHeartBeat(const TcpConnectionPtr& pConnection, const std::shared_ptr<HeartBeat>& pMessage) {
-		unsigned int now = GetSystemTime();
+		unsigned int now = Now::Second();
 		int diff = pMessage->time() - now;
 
 		log(normal, "TestClient") << "recv heart beat: " << now << ", diff: " << diff;

@@ -1,9 +1,5 @@
 syntax = "proto3";
 
-message HeartBeat {
-  uint32 time = 1;
-}
-
 message RequestRsaPublicKey{
 
 }
@@ -17,6 +13,15 @@ message RequestRegister {
   string password = 2;
 }
 
-message ResponseRegister {
+message RegisterResult {
+  uint32 result = 1;
+}
+
+message RequestLogin {
+  string account = 1;
+  string password = 2;
+}
+
+message LoginResult {
   uint32 result = 1;
 }

@@ -8,7 +8,8 @@
 #include <xnet/TcpService.h>
 #include <xnet/ProtobufProcess.h>
 
-#include <xprotos/login.pb.h>
+#include <xprotos/Server.pb.h>
+#include <xprotos/Login.pb.h>
 
 using x::tool::Config;
 using x::tool::Singleton;
@@ -26,26 +27,16 @@ public:
 public:
 	void Start(); 
 	bool SendHeartBeat(const TcpConnectionPtr&);
-	bool SendRegisterResult(const TcpConnectionPtr& pConnection, int result);
 	
 public:
 	void DefaultMessageCallback(const TcpConnectionPtr&, const MessagePtr&);
 	void OnConnection(const TcpConnectionPtr&);
 	void OnHeartBeat(const TcpConnectionPtr&, const std::shared_ptr<HeartBeat>&);
-	void OnRequestRegister(const TcpConnectionPtr&, const std::shared_ptr<RequestRegister>&);
-	void OnRequestRsaPublicKey(const TcpConnectionPtr&, const std::shared_ptr<RequestRsaPublicKey>&);
-
-public:
-	bool VerifyPassword(const std::string& account, const std::string& password);
-	bool VerifyAccount(const std::string& account);
-	bool SaveAccount(const std::string& account, const std::string& password);
 
 private:
 	TcpServerPtr _pTcpServer;
 	ProtobufDispatcher _dispatcher;
 	ProtobufCodec _codec;
-	std::string _private_key;
-	std::string _public_key;
 };
 
 /// class LoginConfig

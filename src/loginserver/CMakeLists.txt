@@ -2,6 +2,8 @@ set(TARGETNAME LoginServer)
 
 set(SRCS
 	LoginServer.cpp
+	LoginUser.cpp
+	LoginUserManager.cpp
 	main.cpp)
 
 add_executable(${TARGETNAME} ${SRCS})

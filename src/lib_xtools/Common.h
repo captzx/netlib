@@ -40,23 +40,4 @@
 
 // x::tool
 #include "Type.h"
-
-
-namespace x {
-
-namespace tool {
-
-class NoCopyable {
-protected:
-	NoCopyable() {}
-	~NoCopyable() {}
-private:
-	NoCopyable(const NoCopyable&);
-	const NoCopyable& operator=(const NoCopyable&);
-};
-
-unsigned int GetSystemTime();
-
-}
-
-}
+#include "Time.h"

@@ -55,7 +55,7 @@ void TcpConnection::Established() {
 	log(debug, "TcpConnection") << "socket is open? " << _sock.is_open() << ".";
 	
 	_state = true;
-	SetLastHeartBeatTime(GetSystemTime());
+	SetLastHeartBeatTime(Now::Second());
 
 	_sock.async_wait(tcp::socket::wait_read, // Asynchronously wait for the socket to become ready to read, ready to write, or to have pending error conditions.
 		[this](const error_code& code) -> void {
@@ -77,7 +77,7 @@ void TcpConnection::AsyncReceive() {
 				_messageCallback(shared_from_this(), this->_buf);
 				AsyncReceive();
 
-				log(debug) << "[TcpConnection]async recv data, len: " << len;
+				log(debug, "TcpConnection") << "async recv data, len: " << len;
 			}
 			else if (len == 0) {
 				Disconnect();
@@ -97,7 +97,7 @@ void TcpConnection::AsyncSend(Buffer& buf) {
 				return;
 			}
 
-			log(debug) << "[TcpConnection]async send data, len: " << len;
+			log(debug, "TcpConnection") << "async send data, len: " << len;
 		});
 }
 
@@ -175,7 +175,7 @@ void TcpServer::RemoveConnection(const TcpConnectionPtr& pConnection) {
 }
 
 void TcpServer::CheckHeartBeat() {
-	unsigned int now = GetSystemTime();
+	unsigned int now = Now::Second();
 	for (auto it = _tcpConnections.begin(); it != _tcpConnections.end();) {
 		const TcpConnectionPtr& pConnection = it->second;
 		if (pConnection) {
