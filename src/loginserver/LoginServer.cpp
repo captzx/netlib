@@ -23,7 +23,7 @@ void LoginServer::Start() {
 	// global_logger_set_filter((expr::has_attr(tag_attr) && (tag_attr == "ProtobufCodec")));
 	LoginUserManager::GetInstance().Init();
 	LoginUserManager::GetInstance().RegisterMessageCallback(_dispatcher);
-
+	_pDBConnection = std::make_shared<DBConnection>("mysqlx://root:xin@localhost");
 	_pTcpServer->Listen(LoginConfig::GetInstance().GetListenPort());
 }
 

@@ -16,7 +16,8 @@ set(HEADERS
 	Singleton.h
 	NoCopyable.h
 	Crypto.h
-	Uuid.h)
+	Uuid.h
+	DBConnection.h)
 set(HEADER_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/../../include)
 install(FILES ${HEADERS} DESTINATION ${HEADER_OUTPUT_PATH}/${TARGETNAME})
 
@@ -25,7 +26,8 @@ set(SRCS
 	Time.cpp
 	Logger.cpp
 	Crypto.cpp
-	Uuid.cpp)
+	Uuid.cpp
+	DBConnection.cpp)
 add_library(${TARGETNAME} SHARED ${SRCS})
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/../../libs)
 install(TARGETS ${TARGETNAME} DESTINATION ${LIBRARY_OUTPUT_PATH})

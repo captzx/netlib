@@ -44,6 +44,9 @@ void LoginUserManager::OnRequestRegister(const TcpConnectionPtr& pConnection, co
 		if (SaveUser(pUser, password)) {
 			SendRegisterResult(pConnection, 1);
 			_userManager.insert({ pUser->GetID(), pUser });
+
+			log(debug, "LoginUserManager") << "create user, user id: " << pUser->GetID();
+			log(debug, "LoginUserManager") << "user manager size: " << _userManager.size();
 		}
 	}
 }

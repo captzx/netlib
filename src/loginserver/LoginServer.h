@@ -3,6 +3,7 @@
 #include <xtools/Config.h>
 #include <xtools/Singleton.h>
 #include <xtools/Crypto.h>
+#include <xtools/DBConnection.h>
 
 #include <xnet/Using.h>
 #include <xnet/TcpService.h>
@@ -11,10 +12,8 @@
 #include <xprotos/Server.pb.h>
 #include <xprotos/Login.pb.h>
 
-using x::tool::Config;
-using x::tool::Singleton;
-
-using namespace x::net;
+using namespace x::tool;
+using namespace x::net; 
 
 namespace x {
 namespace login {
@@ -37,6 +36,7 @@ private:
 	TcpServerPtr _pTcpServer;
 	ProtobufDispatcher _dispatcher;
 	ProtobufCodec _codec;
+	DBConnectionPtr _pDBConnection;
 };
 
 /// class LoginConfig

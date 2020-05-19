@@ -1,16 +1,19 @@
 #pragma once 
 
+#include <boost/asio.hpp>
+
 #include "Using.h"
 #include "Buffer.h"
 
-using  x::tool::NoCopyable;
+using boost::asio::ip::tcp;
+using boost::asio::io_context;
+using SocketPtr = std::shared_ptr<tcp::socket>;
+using boost::system::error_code;
+using x::tool::NoCopyable;
 
 namespace x {
 
 namespace net {
-
-using boost::asio::ip::tcp;
-using boost::asio::io_context;
 
 class TcpConnection;
 using TcpConnectionPtr = std::shared_ptr<TcpConnection>;
@@ -23,7 +26,7 @@ void DefaultMessageCallback(const TcpConnectionPtr&, Buffer&);
 void DefaultConnectionCallback(const TcpConnectionPtr&);
 
 /// IOContext
-class IOContext :public NoCopyable {
+class IOContext : public NoCopyable {
 public:
 	void Run(); 
 	void RunInThread();

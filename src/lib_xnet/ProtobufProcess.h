@@ -1,14 +1,16 @@
 #pragma once
 
+#include <google/protobuf/message.h>
+#include <google/protobuf/descriptor.h>
+
+#include <cryptopp/adler32.h>
+
 #include "Using.h"
 #include "Buffer.h"
 #include "TcpService.h"
-#include <google/protobuf/message.h>
-#include <google/protobuf/descriptor.h>
+
 using google::protobuf::Message;
 using google::protobuf::Descriptor;
-
-#include <cryptopp/adler32.h>
 
 namespace x {
 
