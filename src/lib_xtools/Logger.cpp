@@ -42,6 +42,7 @@ std::ostream& x::tool::operator<< (std::ostream& strm, severity_level level)
 {
 	static const char* strings[] =
 	{
+		"TRIVIAL",
 		"DEBUG",
 		"NORMAL",
 		"NOITCE",

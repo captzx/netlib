@@ -66,7 +66,7 @@ MessagePtr ProtobufCodec::ParseDataPackage(const char* buf, uint32_t dataLen) {
 		const char* messageData = buf + MESSAGE_NAME_LEN_SIZE + nameLen;
 		int messageLen = dataLen - (nameLen + MESSAGE_NAME_LEN_SIZE + CHECKSUM_LEN_SIZE);
 		if (pMessage->ParseFromArray(messageData, messageLen)) {
-			log(debug, "ProtobufCodec") << "parse data success, get message: \"" << messageName << "\"";
+			log(trivial, "ProtobufCodec") << "parse data success, get message: \"" << messageName << "\"";
 		}
 	}
 

@@ -1,9 +1,13 @@
 #include "LoginUserManager.h"
 
-#include "LoginUser.h"
+#include <mysqlx/xdevapi.h>
 
 #include <xtools/Time.h>
 
+#include "LoginUser.h"
+#include "LoginServer.h"
+
+using namespace mysqlx;
 using namespace x::login;
 using namespace x::tool;
 
@@ -41,14 +45,15 @@ void LoginUserManager::OnRequestRegister(const TcpConnectionPtr& pConnection, co
 
 	if (VerifyAccount(account)) {
 		std::shared_ptr<LoginUser> pUser = CreateUser(account);
-		if (SaveUser(pUser, password)) {
-			SendRegisterResult(pConnection, 1);
+		if (SaveUser(pUser, account, password)) {
+			SendRegisterResult(pConnection, 0); // success
 			_userManager.insert({ pUser->GetID(), pUser });
 
 			log(debug, "LoginUserManager") << "create user, user id: " << pUser->GetID();
 			log(debug, "LoginUserManager") << "user manager size: " << _userManager.size();
 		}
 	}
+	else SendRegisterResult(pConnection, 1); // alread existed
 }
 
 bool LoginUserManager::SendRegisterResult(const TcpConnectionPtr& pConnection, int result) {
@@ -69,6 +74,21 @@ void LoginUserManager::OnRequestLogin(const TcpConnectionPtr& pConnection, const
 	std::string account = pMsg->account();
 	std::string password = RSADecrypt(_private_key, pMsg->password());
 	std::string inputPassword = PBKDFEncrypt(password, SHA3_256Hash(password));
+
+	std::ostringstream oss;
+
+	oss << "SELECT user.`pwd` FROM x_login.user WHERE user.`act` = '" << account << "';";
+	
+	SqlResult result = LoginServer::GetLoginDBConnection()->ExecuteSql(oss.str());
+	if (result.count() == 0) SendLoginResult(pConnection, 1);
+	else {
+		assert(result.count() == 1);
+		Row row = result.fetchOne();
+		assert(!row.isNull());
+		std::string existPassword = static_cast<std::string>(row.get(0));
+		if (inputPassword == existPassword) SendLoginResult(pConnection, 0);
+		else SendLoginResult(pConnection, 2);
+	}
 }
 
 bool LoginUserManager::SendLoginResult(const TcpConnectionPtr& pConnection, int result) {
@@ -85,7 +105,17 @@ bool LoginUserManager::SendLoginResult(const TcpConnectionPtr& pConnection, int 
 }
 
 bool LoginUserManager::VerifyAccount(const std::string& account) {
-	log(debug, "LoginUserManager") << "todo: verify account";
+	std::ostringstream oss;
+
+	oss << "SELECT user.`act` FROM x_login.user WHERE user.`act` = '" << account << "';";
+
+	SqlResult result = LoginServer::GetLoginDBConnection()->ExecuteSql(oss.str());
+
+	if (result.count() != 0) {
+		log(debug, "LoginUserManager") << "account existed, login or pick another!";
+		return false;
+	}
+
 	return true;
 }
 
@@ -103,10 +133,14 @@ std::shared_ptr<LoginUser> LoginUserManager::CreateUser(const std::string& accou
 	return pUser;
 }
 
-bool LoginUserManager::SaveUser(const std::shared_ptr<LoginUser>& pUser, const std::string& password) {
-	std::string result = PBKDFEncrypt(password, SHA3_256Hash(password)); // fix, don't use password generate salt
+bool LoginUserManager::SaveUser(const std::shared_ptr<LoginUser>& pUser, const std::string& account, const std::string& password) {
+	std::string encrypt = PBKDFEncrypt(password, SHA3_256Hash(password)); // fix, don't use password generate salt
 
-	log(debug, "LoginUserManager") << "PBKDFEncrypt result:" << result;
-	log(debug, "LoginUserManager") << "todo: save account to db";
+	std::ostringstream oss;
+
+	oss << "INSERT INTO x_login.user(`id`, `act`, `pwd`) VALUES (" << pUser->GetID() << ", '" << account << "', '" << encrypt << "');";
+
+	LoginServer::GetLoginDBConnection()->ExecuteSql(oss.str());
+
 	return true;
 }

@@ -25,6 +25,8 @@ public:
 
 		_dispatcher.RegisterMessageCallback<HeartBeat>(std::bind(&TestClient::OnHeartBeat, this, std::placeholders::_1, std::placeholders::_2));
 		_dispatcher.RegisterMessageCallback<ResponseRsaPublicKey>(std::bind(&TestClient::OnResponseRsaPublicKey, this, std::placeholders::_1, std::placeholders::_2));
+		_dispatcher.RegisterMessageCallback<RegisterResult>(std::bind(&TestClient::OnRegisterResult, this, std::placeholders::_1, std::placeholders::_2));
+		_dispatcher.RegisterMessageCallback<LoginResult>(std::bind(&TestClient::OnLoginResult, this, std::placeholders::_1, std::placeholders::_2));
 	}
 
 public:
@@ -56,7 +58,7 @@ public:
 		unsigned int now = Now::Second();
 		int diff = pMessage->time() - now;
 
-		log(normal, "TestClient") << "recv heart beat: " << now << ", diff: " << diff;
+		log(trivial, "TestClient") << "recv heart beat: " << now << ", diff: " << diff;
 
 		pConnection->SetLastHeartBeatTime(now);
 
@@ -68,10 +70,36 @@ public:
 	}
 	void OnResponseRsaPublicKey(const TcpConnectionPtr& pConnection, const std::shared_ptr<ResponseRsaPublicKey>& pMessage) {
 		_public_key = pMessage->publickey();
-
-		std::cout << "_public_key: " << _public_key << std::endl;
 	}
-
+	void OnRegisterResult(const TcpConnectionPtr& pConnection, const std::shared_ptr<RegisterResult>& pMessage) {
+		switch (pMessage->result())
+		{
+		case 0:
+			log(warning, "TestClient") << "todo: login success!";
+			break;
+		case 1:
+			log(warning, "TestClient") << "todo: already register!";
+			break;
+		default:
+			break;
+		}
+	}	
+	void OnLoginResult(const TcpConnectionPtr& pConnection, const std::shared_ptr<LoginResult>& pMessage) {
+		switch (pMessage->result())
+		{
+		case 0:
+			log(warning, "TestClient") << "todo: login success!";
+			break;
+		case 1:
+			log(warning, "TestClient") << "todo: not register!";
+			break;
+		case 2:
+			log(warning, "TestClient") << "todo: error password!";
+			break;
+		default:
+			break;
+		}
+	}
 	const std::string& PublicKey() {
 		return _public_key;
 	}
@@ -96,26 +124,66 @@ int main(int argc, char* argv[])
 
 		char line[20];
 		while (client.IsConnectioned() && std::cin.getline(line, 20)) {
-			if (client.PublicKey().empty()) {
+			switch (line[0])
+			{
+			case '1':
+			{
 				auto pMsg = std::make_shared<RequestRsaPublicKey>();
 				if (pMsg) {
 					Buffer buf;
 					ProtobufCodec::PackMessage(pMsg, buf);
 					client.AsyncSend(buf);
 				}
+
+				log(normal, "TestClient") << "request ras public key!";
 			}
-			else {
+				break;
+			case '2':
+			{
+				if (client.PublicKey().empty()) {
+					log(normal, "TestClient") << "request ras public key first, please!";
+					break;
+				}
+
 				auto pMsg = std::make_shared<RequestRegister>();
 				if (pMsg) {
 					pMsg->set_account("captzx");
 					pMsg->set_password(RSAEncrypt(client.PublicKey(), "123"));
 					// pMsg->set_password("123");
 
-					
+
 					Buffer buf;
 					ProtobufCodec::PackMessage(pMsg, buf);
 					client.AsyncSend(buf);
 				}
+
+				log(normal, "TestClient") << "request register!";
+			}
+			break;
+			case '3':
+			{
+				if (client.PublicKey().empty()) {
+					log(normal, "TestClient") << "request ras public key first, please!";
+					break;
+				}
+
+				auto pMsg = std::make_shared<RequestLogin>();
+				if (pMsg) {
+					pMsg->set_account("captzx");
+					pMsg->set_password(RSAEncrypt(client.PublicKey(), "1234"));
+					// pMsg->set_password("123");
+
+
+					Buffer buf;
+					ProtobufCodec::PackMessage(pMsg, buf);
+					client.AsyncSend(buf);
+				}
+
+				log(normal, "TestClient") << "request login!";
+			}
+			break;
+			default:
+				break;
 			}
 		}
 

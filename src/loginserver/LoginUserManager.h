@@ -37,7 +37,7 @@ public:
 	bool VerifyAccount(const std::string& account);
 	bool VerifyPassword(const std::string& account, const std::string& password);
 	std::shared_ptr<LoginUser> CreateUser(const std::string& account);
-	bool SaveUser(const std::shared_ptr<LoginUser>& pUser, const std::string& password);
+	bool SaveUser(const std::shared_ptr<LoginUser>& pUser, const std::string& account, const std::string& password);
 
 private:
 	std::string _private_key;

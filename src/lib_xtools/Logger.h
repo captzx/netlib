@@ -45,6 +45,7 @@ namespace attrs = boost::log::attributes;
 namespace expr = boost::log::expressions;
 
 enum severity_level {
+	trivial,
 	debug,
 	normal,
 	notice,

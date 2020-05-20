@@ -4,6 +4,8 @@
 using namespace x::login;
 using namespace x::tool;
 
+DBConnectionPtr LoginServer::_pDBLoginConnection = std::make_shared<DBConnection>("mysqlx://zx:Luck25.zx@localhost");
+
 /// LoginServer
 LoginServer::LoginServer(IOContext& ctx, std::string name):
 	_dispatcher(std::bind(&LoginServer::DefaultMessageCallback, this, std::placeholders::_1, std::placeholders::_2)),
@@ -20,10 +22,9 @@ LoginServer::LoginServer(IOContext& ctx, std::string name):
 void LoginServer::Start() {
 	LoginConfig::GetInstance().LoadFile("config.xml");
 	global_logger_init(LoginConfig::GetInstance().GetLogFile());
-	// global_logger_set_filter((expr::has_attr(tag_attr) && (tag_attr == "ProtobufCodec")));
+	global_logger_set_filter(severity >= debug);
 	LoginUserManager::GetInstance().Init();
 	LoginUserManager::GetInstance().RegisterMessageCallback(_dispatcher);
-	_pDBConnection = std::make_shared<DBConnection>("mysqlx://root:xin@localhost");
 	_pTcpServer->Listen(LoginConfig::GetInstance().GetListenPort());
 }
 

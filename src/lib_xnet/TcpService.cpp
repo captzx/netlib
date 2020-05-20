@@ -77,7 +77,7 @@ void TcpConnection::AsyncReceive() {
 				_messageCallback(shared_from_this(), this->_buf);
 				AsyncReceive();
 
-				log(debug, "TcpConnection") << "async recv data, len: " << len;
+				log(trivial, "TcpConnection") << "async recv data, len: " << len;
 			}
 			else if (len == 0) {
 				Disconnect();
@@ -97,7 +97,7 @@ void TcpConnection::AsyncSend(Buffer& buf) {
 				return;
 			}
 
-			log(debug, "TcpConnection") << "async send data, len: " << len;
+			log(trivial, "TcpConnection") << "async send data, len: " << len;
 		});
 }
 

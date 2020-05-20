@@ -8,6 +8,7 @@
 #include "NoCopyable.h"
 
 using mysqlx::Session;
+using mysqlx::SqlResult;
 
 namespace x {
 
@@ -19,9 +20,7 @@ public:
 
 public:
 	void Init();
-	void CreateSchema(const std::string&);
-	void CreateTable(const std::string&);
-	void ExecuteSql(const std::string&);
+	SqlResult ExecuteSql(const std::string&);
 
 private:
 	std::shared_ptr<Session> _pSession; // fix: unique_ptr

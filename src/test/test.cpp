@@ -9,7 +9,7 @@ using namespace ::mysqlx;
 int main(int argc, const char* argv[])
 try {
 
-	const char* url = (argc > 1 ? argv[1] : "mysqlx://root:xin@localhost");
+	const char* url = (argc > 1 ? argv[1] : "mysqlx://zx:Luck25.zx@localhost");
 
 	cout << "Creating session on " << url
 		<< " ..." << endl;

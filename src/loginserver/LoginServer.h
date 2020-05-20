@@ -36,7 +36,11 @@ private:
 	TcpServerPtr _pTcpServer;
 	ProtobufDispatcher _dispatcher;
 	ProtobufCodec _codec;
-	DBConnectionPtr _pDBConnection;
+	
+public:
+	static DBConnectionPtr GetLoginDBConnection() { return _pDBLoginConnection; }
+public:
+	static DBConnectionPtr _pDBLoginConnection;
 };
 
 /// class LoginConfig
