@@ -6,6 +6,6 @@ if [ ! -d "build" ]; then
 else
 	cd build
 	cmake ..
-	make -j6
+	make -j
 fi
 

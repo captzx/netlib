@@ -1,8 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <Root>
-  <LoginServer name="LoginServer">
-    <Log output="./log/loginserver.log" />
-    <Net port="1234"/>
-  </LoginServer>
+  <ServerType>
+    <_A_Type Type="1" Enum="SUPERVISORSERVER" />
+    <_A_Type Type="2" Enum="LOGINSERVER" />
+    <_A_Type Type="3" Enum="GATEWAYSERVER" />
+  </ServerType>
+  <ServerInfo>
+    <_A_Server Type="1" Name="SupervisorServer" Port="1231" MaxConn="20" LogFile="./log/supervisor.log" >
+    </_A_Server>
+    <_A_Server Type="2" Name="LoginServer" Port="1232" MaxConn="20" LogFile="./log/loginserver.log">
+      <ConnectDB>
+        <_A_Connect ConnectInfo="" />
+      </ConnectDB>
+      <ConnectServer>
+        <_A_Connect Type="1" IP="127.0.0.1" Port="" />
+      </ConnectServer>
+    </_A_Server>
+    <_A_Server Type="3" Name="GatewayServer" Port="1233" MaxConn="20" LogFile="./log/gatewayserver.log">
+      <ConnectServer>
+        <_A_Connect Type="1" IP="127.0.0.1" Port="" />
+      </ConnectServer>
+    </_A_Server>
+  </ServerInfo>
 </Root>

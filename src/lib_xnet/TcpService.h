@@ -4,6 +4,7 @@
 
 #include "Using.h"
 #include "Buffer.h"
+#include "ProtobufProcess.h"
 
 using boost::asio::ip::tcp;
 using boost::asio::io_context;
@@ -20,134 +21,102 @@ using TcpConnectionPtr = std::shared_ptr<TcpConnection>;
 using MessageCallback = std::function<void(const TcpConnectionPtr&, Buffer&)>;
 using ConnectionCallback = std::function<void(const TcpConnectionPtr&)>;
 using CloseCallback = std::function<void(const TcpConnectionPtr&)>;
-using HeartBeatCallback = std::function<void(const TcpConnectionPtr&)>;
+
+using MessagePtr = std::shared_ptr<google::protobuf::Message>;
 
 void DefaultMessageCallback(const TcpConnectionPtr&, Buffer&);
 void DefaultConnectionCallback(const TcpConnectionPtr&);
-
-/// IOContext
-class IOContext : public NoCopyable {
-public:
-	void Run(); 
-	void RunInThread();
-	void Stop();
-	io_context& Get();
-	bool IsRunning();
-private:
-	std::thread _ctx_running;
-	io_context _io_context;
-};
+void DefaultCloseCallback(const TcpConnectionPtr&);
 
 /// TcpConnection
-class TcpConnection : public NoCopyable, public std::enable_shared_from_this<TcpConnection> {
+class TcpConnection: public std::enable_shared_from_this<TcpConnection> {
+public:
+	enum State {
+		Unused,
+		Connected,
+		Disconnected
+	};
 public:
 	TcpConnection(tcp::socket);
 	~TcpConnection();
 public:
-	void Established();
+	void OnEstablish();
 	void Disconnect();
-	void AsyncSend(Buffer&);
+	void AsyncSend(const MessagePtr& pMessage);
 	void AsyncReceive();
 
-	bool IsConnectioned() { return _state; }
+	bool IsConnectioned() { return _state == Connected; }
 	tcp::socket& GetSocket() { return _sock; }
 	unsigned int GetLastHeartBeatTime() { return _lastHeartBeat; }
 	void SetLastHeartBeatTime(unsigned int time) { _lastHeartBeat = time; }
 public:
-	void SetID(unsigned int id) { _id = id; }
-	unsigned int GetID() { return _id; }
+
+	void SetID(int id) { _id = id; }
+	int GetID() { return _id; }
 
 public:
 	void SetMessageCallback(MessageCallback callback) { _messageCallback = callback; }
 	void SetCloseCallback(CloseCallback callback) { _closeCallback = callback; }
 	
 private:
-	bool _state;
-	unsigned int _id;
 	tcp::socket _sock;
+
+	int _id;
+	State _state;
+
 	Buffer _buf;
+
 	unsigned int _lastHeartBeat;
 
 private:
 	MessageCallback _messageCallback;
 	CloseCallback _closeCallback;
+
+public:
+	static int Count;
 };
 
 /// TcpService
-class TcpServices : public NoCopyable {
+class TcpService {
 public:
-	explicit TcpServices(std::string name) :
-	_name(name),
-	_heartbeatPeriod(3), // default heart beat 10s
-	_messageCallback(std::bind(&DefaultMessageCallback, std::placeholders::_1, std::placeholders::_2)),
-	_connectionCallback(std::bind(&DefaultConnectionCallback, std::placeholders::_1)) {
-
-	}
+	explicit TcpService(std::string);
 
 public:
+	void AsyncListen(unsigned int);
+	TcpConnectionPtr AsyncConnect(std::string ip, unsigned int port);
+
+	void RemovePassiveConnection(const TcpConnectionPtr&);
+	void RemoveActiveConnection(const TcpConnectionPtr&);
+	
 	void SetMessageCallback(MessageCallback callback) {
 		_messageCallback = callback;
 	}
 	void SetConnectionCallback(ConnectionCallback callback) {
 		_connectionCallback = callback;
 	}
-	void SetHeartCallback(HeartBeatCallback callback) {
-		_heartCallback = callback;
-	}
-	
-protected:
-	std::string _name;
-	int _heartbeatPeriod;
 
-protected:
-	MessageCallback _messageCallback;
-	ConnectionCallback _connectionCallback; 
-	HeartBeatCallback _heartCallback;
-};
-using TcpServicesPtr = std::shared_ptr<TcpServices>;
-
-/// TcpServer
-class TcpServer : public TcpServices {
-public:
-	using TcpConnectionManager = std::map<int, TcpConnectionPtr>;
-
-public:
-	explicit TcpServer(IOContext&, std::string);
-
-public:
-	void Init();
-	void Listen(unsigned int port);
-	void RemoveConnection(const TcpConnectionPtr&);
-
+	void Start();
+	void Close();
 private:
-	void CheckHeartBeat();
 	void AsyncHeartBeatInLoop();
 	void AsyncListenInLoop();
 
 private:
-	int _counter;
+	std::string _name;
+	io_context _io_context;
 	tcp::acceptor _acceptor;
-	TcpConnectionManager _tcpConnections;
 	boost::asio::deadline_timer _heartTimer;
-};
-using TcpServerPtr = std::shared_ptr<TcpServer>;
 
-/// TcpClient
-class TcpClient : public TcpServices {
-public:
-	explicit TcpClient(IOContext&, std::string);
+	using TcpConnectionManager = std::map<int, TcpConnectionPtr>;
+	TcpConnectionManager _activeConnections;
+	TcpConnectionManager _passiveConnections;
 
-public:
-	bool IsConnectioned();
-	void AsyncConnect(std::string ip, unsigned int port);
-	void AsyncSend(Buffer& buf);
-	void Close();
-	void DestroyConnection(const TcpConnectionPtr&);
-private:
-	IOContext& _ctx;
-	TcpConnectionPtr _pConnection;
+	MessageCallback _messageCallback;
+	ConnectionCallback _connectionCallback;
+
+	std::thread _io_thread;
 };
-using TcpClientPtr = std::shared_ptr<TcpClient>;
+using TcpServicePtr = std::shared_ptr<TcpService>;
 
 } // namespace net
 

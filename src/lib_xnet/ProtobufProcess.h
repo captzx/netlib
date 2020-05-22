@@ -16,6 +16,8 @@ namespace x {
 
 namespace net {
 
+class TcpConnection;
+using TcpConnectionPtr = std::shared_ptr<TcpConnection>;
 using MessagePtr = std::shared_ptr<Message>;
 using ProtobufMessageCallback = std::function<void(const TcpConnectionPtr&, const MessagePtr&)>;
 

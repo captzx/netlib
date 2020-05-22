@@ -7,14 +7,15 @@ using namespace x::tool;
 DBConnectionPtr LoginServer::_pDBLoginConnection = std::make_shared<DBConnection>("mysqlx://zx:Luck25.zx@localhost");
 
 /// LoginServer
-LoginServer::LoginServer(IOContext& ctx, std::string name):
+LoginServer::LoginServer(std::string name):
 	_dispatcher(std::bind(&LoginServer::DefaultMessageCallback, this, std::placeholders::_1, std::placeholders::_2)),
 	_codec(std::bind(&ProtobufDispatcher::RecvMessage, &_dispatcher, std::placeholders::_1, std::placeholders::_2)) {
 
-	_pTcpServer = std::make_shared<TcpServer>(ctx, name);
-	_pTcpServer->SetMessageCallback(std::bind(&ProtobufCodec::RecvMessage, &_codec, std::placeholders::_1, std::placeholders::_2));
-	_pTcpServer->SetConnectionCallback(std::bind(&LoginServer::OnConnection, this, std::placeholders::_1));
-	_pTcpServer->SetHeartCallback(std::bind(&LoginServer::SendHeartBeat, this, std::placeholders::_1));
+	_pTcpService = std::make_shared<TcpService>(name);
+
+	_pTcpService->SetMessageCallback(std::bind(&ProtobufCodec::RecvMessage, &_codec, std::placeholders::_1, std::placeholders::_2));
+	_pTcpService->SetConnectionCallback(std::bind(&LoginServer::OnConnection, this, std::placeholders::_1));
+	// _pTcpService->SetHeartCallback(std::bind(&LoginServer::SendHeartBeat, this, std::placeholders::_1));
 
 	_dispatcher.RegisterMessageCallback<HeartBeat>(std::bind(&LoginServer::OnHeartBeat, this, std::placeholders::_1, std::placeholders::_2));
 }
@@ -22,10 +23,16 @@ LoginServer::LoginServer(IOContext& ctx, std::string name):
 void LoginServer::Start() {
 	LoginConfig::GetInstance().LoadFile("config.xml");
 	global_logger_init(LoginConfig::GetInstance().GetLogFile());
-	global_logger_set_filter(severity >= debug);
+	global_logger_set_filter(severity >= trivial);
 	LoginUserManager::GetInstance().Init();
 	LoginUserManager::GetInstance().RegisterMessageCallback(_dispatcher);
-	_pTcpServer->Listen(LoginConfig::GetInstance().GetListenPort());
+
+	_pGateWayConnection = _pTcpService->AsyncConnect("127.0.0.1", 1235);
+
+	_pTcpService->AsyncListen(LoginConfig::GetInstance().GetListenPort());
+	_pTcpService->Start();
+
+	log(debug, "LoginServer") << "login server start.";
 }
 
 void LoginServer::DefaultMessageCallback(const TcpConnectionPtr&, const MessagePtr&) {
@@ -41,14 +48,11 @@ void LoginServer::OnHeartBeat(const TcpConnectionPtr& pConnection, const std::sh
 }
 
 bool LoginServer::SendHeartBeat(const TcpConnectionPtr& pConnection) {
-	auto pSend = std::make_shared<HeartBeat>();
-	if (pSend) {
+	auto pMsg = std::make_shared<HeartBeat>();
+	if (pMsg) {
 		unsigned int now = Now::Second();
-		pSend->set_time(now);
-
-		Buffer buf;
-		ProtobufCodec::PackMessage(pSend, buf);
-		pConnection->AsyncSend(buf);
+		pMsg->set_time(now);
+		pConnection->AsyncSend(pMsg);
 	}
 
 	return true;

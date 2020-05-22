@@ -21,7 +21,7 @@ namespace login {
 /// class LoginServer
 class LoginServer {
 public:
-	explicit LoginServer(IOContext&, std::string);
+	explicit LoginServer(std::string);
 
 public:
 	void Start(); 
@@ -33,9 +33,11 @@ public:
 	void OnHeartBeat(const TcpConnectionPtr&, const std::shared_ptr<HeartBeat>&);
 
 private:
-	TcpServerPtr _pTcpServer;
+	TcpServicePtr _pTcpService;
 	ProtobufDispatcher _dispatcher;
 	ProtobufCodec _codec;
+
+	TcpConnectionPtr _pGateWayConnection;
 	
 public:
 	static DBConnectionPtr GetLoginDBConnection() { return _pDBLoginConnection; }

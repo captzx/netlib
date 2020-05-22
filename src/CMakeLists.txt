@@ -1,2 +1,3 @@
-add_subdirectory(loginserver)
+add_subdirectory(server_gateway)
+add_subdirectory(server_login)
 add_subdirectory(test)

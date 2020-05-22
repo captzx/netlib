@@ -35,6 +35,45 @@ private:
 	std::string _fileName;
 };
 
+struct ServerCfg {
+	std::string IP;
+	unsigned int Port;
+	unsigned int MaxConn;
+	std::string LogFile;
+};
+
+/// class GlobalConfig
+class GlobalConfig : public Config, public Singleton<GlobalConfig> {
+public:
+	virtual bool Parse() override {
+		const std::shared_ptr<XMLDocument>& pDoc = GetXmlDoc();
+		if (!pDoc) {
+			std::cout << "xml document not found, is file exist?" << std::endl;
+			return false;
+		}
+
+		XMLElement* pRoot = pDoc->RootElement();
+		if (!pRoot) return false;
+
+		XMLElement* pLoginServer = pRoot->FirstChildElement("LoginServer");
+		if (pLoginServer) {
+			XMLElement* pTagLog = pLoginServer->FirstChildElement("Log");
+			if (pTagLog) _logFile = pTagLog->Attribute("output");
+
+			XMLElement* pTagNet = pLoginServer->FirstChildElement("Net");
+			if (pTagNet) pTagNet->QueryUnsignedAttribute("port", &_netPort);
+		}
+
+		return true;
+	}
+
+public:
+	unsigned int GetServerCfgByType() { return _netPort; }
+
+private:
+	std::map<int, ServerCfg> _serverCfgs;
+};
+
 } // namespace tool
 
 } // namespace x

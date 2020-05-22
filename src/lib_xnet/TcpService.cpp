@@ -15,47 +15,31 @@ void x::net::DefaultMessageCallback(const TcpConnectionPtr&, Buffer&) {
 void x::net::DefaultConnectionCallback(const TcpConnectionPtr&) {
 	log(debug) << "default connection call back.";
 }
-
-void IOContext::Run() {
-	_io_context.run();
-}
-void IOContext::RunInThread() {
-	_ctx_running = std::thread([this] { 
-		_io_context.run();
-	});
-}
-
-io_context& IOContext::Get() { 
-	return _io_context; 
-}
-bool IOContext::IsRunning() {
-	return _io_context.stopped() == false;
-}
-void IOContext::Stop() {
-	if (_ctx_running.joinable()) {
-		_ctx_running.join();
-	}
+void x::net::DefaultCloseCallback(const TcpConnectionPtr&) {
+	log(debug) << "default connection call back.";
 }
 
 /// TcpConnection
-TcpConnection::TcpConnection(tcp::socket sock) :
-	_id(0),
-	_sock(std::move(sock)),
+int TcpConnection::Count = 0;
+
+TcpConnection::TcpConnection(tcp::socket sock) : _sock(std::move(sock)),
+	_id(TcpConnection::Count++),
+	_state(Unused),
 	_lastHeartBeat(0),
-	_messageCallback(std::bind(&DefaultMessageCallback, std::placeholders::_1, std::placeholders::_2)) {
+	_messageCallback(std::bind(&DefaultMessageCallback, std::placeholders::_1, std::placeholders::_2)),
+	_closeCallback(std::bind(&DefaultCloseCallback, std::placeholders::_1)) {
 }
 
 TcpConnection::~TcpConnection() {
 	log(debug, "TcpConnection") << "~TcpConnection::TcpConnection";
 }
 
-void TcpConnection::Established() {
+void TcpConnection::OnEstablish() {
 	log(debug, "TcpConnection") << "tcp make establish, remote end point: " << _sock.remote_endpoint() << ".";
 	log(debug, "TcpConnection") << "socket is non-blocking mode? " << _sock.non_blocking() << ".";
 	log(debug, "TcpConnection") << "socket is open? " << _sock.is_open() << ".";
-	
-	_state = true;
-	SetLastHeartBeatTime(Now::Second());
+
+	_state = Connected;
 
 	_sock.async_wait(tcp::socket::wait_read, // Asynchronously wait for the socket to become ready to read, ready to write, or to have pending error conditions.
 		[this](const error_code& code) -> void {
@@ -89,7 +73,8 @@ void TcpConnection::AsyncReceive() {
 		});
 }
 
-void TcpConnection::AsyncSend(Buffer& buf) {
+void TcpConnection::AsyncSend(const MessagePtr& pMessage) {
+	Buffer buf; ProtobufCodec::PackMessage(pMessage, buf);
 	_sock.async_write_some(asio::buffer(buf.ReadPtr(), buf.Readable()),
 		[this](const error_code& code, size_t len) -> void {
 			if (code) {
@@ -102,30 +87,31 @@ void TcpConnection::AsyncSend(Buffer& buf) {
 }
 
 void TcpConnection::Disconnect() {
-	if (_state) {
-		_state = false;
+	if (_state == Connected) {
 		_sock.cancel(); // mark
 		// _sock.shutdown(tcp::socket::shutdown_both);
 		_sock.close();
 		_closeCallback(shared_from_this());
 		log(debug, "TcpConnection") << "socket close.";
+
 	}
+
+	_state = Disconnected;
 }
-/// TcpServer
-TcpServer::TcpServer(IOContext& ctx, std::string name): TcpServices(name),
-	_counter(0),
-	_acceptor(ctx.Get()),
-	_heartTimer(ctx.Get()){
+
+/// TcpService
+TcpService::TcpService(std::string name) :
+	_name(name),
+	_acceptor(_io_context),
+	_heartTimer(_io_context),
+	_messageCallback(std::bind(&DefaultMessageCallback, std::placeholders::_1, std::placeholders::_2)),
+	_connectionCallback(std::bind(&DefaultConnectionCallback, std::placeholders::_1)){
 
 }
 
-void TcpServer::Init() {
-	
-}
-
-void TcpServer::Listen(unsigned int port) {
+void TcpService::AsyncListen(unsigned int port) {
 	if (port == 0) {
-		log(error, "TcpServer") << "acceptor listen failure, error message: port = 0.";
+		log(error, "TcpService") << "acceptor listen failure, error message: port = 0.";
 		return;
 	}
 
@@ -136,134 +122,106 @@ void TcpServer::Listen(unsigned int port) {
 
 	_acceptor.bind(local, code);
 	if (code) {
-		log(error, "TcpServer") << "acceptor bind port: " << port << " failure, error message: " << code.message();
+		log(error, "TcpService") << "acceptor bind port: " << port << " failure, error message: " << code.message();
 		return;
 	}
 
 	_acceptor.listen(asio::socket_base::max_listen_connections, code);
 	if (code) {
-		log(error, "TcpServer") << "acceptor listen port " << port << " failure, error code: " << code.message();
+		log(error, "TcpService") << "acceptor listen port " << port << " failure, error code: " << code.message();
 		return;
 	}
 
-	//boost::asio::socket_base::linger option;
-	//_acceptor.get_option(option);
-	//bool is_set = option.enabled();
-	//if (!is_set) {
-	//	boost::asio::socket_base::linger option(true, 0);
-	//	_acceptor.set_option(option);
-	//	log(debug) << "linger: open?: " << option.enabled() << ", time_out" << option.timeout();
-	//}
-
-	//std::this_thread::sleep_for(std::chrono::seconds(5)); // test linger 
-
-	log(normal, "TcpServer") << "acceptor listening... port: " << port;
-
 	AsyncListenInLoop();
 
-	_heartTimer.expires_from_now(boost::posix_time::seconds(0));
-	AsyncHeartBeatInLoop();
+	log(normal, "TcpService") << "acceptor listening... port: " << port;
 }
 
-void TcpServer::RemoveConnection(const TcpConnectionPtr& pConnection) {
-	auto it = _tcpConnections.find(pConnection->GetID());
-	if (it != _tcpConnections.end()) {
+
+TcpConnectionPtr TcpService::AsyncConnect(std::string ip, unsigned int port) {
+	tcp::endpoint endpoint = tcp::endpoint(boost::asio::ip::address::from_string(ip), port);
+	TcpConnectionPtr pConnection = std::make_shared<TcpConnection>(std::move(tcp::socket(_io_context)));
+	if (pConnection) {
+		pConnection->GetSocket().async_connect(endpoint,
+			[this, pConnection](const error_code& code) {
+				if (code) {
+					log(error, "TcpService") << "connect failure, error message: " << code.message();
+					return;
+				}
+
+				pConnection->SetMessageCallback(_messageCallback);
+				pConnection->SetCloseCallback(std::bind(&TcpService::RemoveActiveConnection, this, std::placeholders::_1));
+				pConnection->OnEstablish();
+
+				_activeConnections.insert({ pConnection->GetID(), pConnection });
+
+				_connectionCallback(pConnection);
+			}
+		);
+	}
+
+	return pConnection;
+}
+
+void TcpService::RemoveActiveConnection(const TcpConnectionPtr& pConnection) {
+	auto it = _activeConnections.find(pConnection->GetID());
+	if (it != _activeConnections.end()) {
 		assert(pConnection == it->second);
 
-		_tcpConnections.erase(pConnection->GetID());
+		_activeConnections.erase(pConnection->GetID());
 	}
 }
+void TcpService::RemovePassiveConnection(const TcpConnectionPtr& pConnection) {
+	auto it = _passiveConnections.find(pConnection->GetID());
+	if (it != _passiveConnections.end()) {
+		assert(pConnection == it->second);
 
-void TcpServer::CheckHeartBeat() {
-	unsigned int now = Now::Second();
-	for (auto it = _tcpConnections.begin(); it != _tcpConnections.end();) {
-		const TcpConnectionPtr& pConnection = it->second;
-		if (pConnection) {
-			unsigned int last = pConnection->GetLastHeartBeatTime();
-			if (now > last + _heartbeatPeriod * 2) {
-				if (pConnection->IsConnectioned() ) {
-					pConnection->Disconnect(); // WARNNIGN: use erase()
-				}
-			}
-			else {
-				++it;
-				_heartCallback(pConnection);
-			}
-		}
+		_passiveConnections.erase(pConnection->GetID());
 	}
 }
-void TcpServer::AsyncHeartBeatInLoop() {
-	_heartTimer.async_wait([this](const error_code& ec) {
-			CheckHeartBeat();
-
-			_heartTimer.expires_from_now(boost::posix_time::seconds(_heartbeatPeriod));
-			AsyncHeartBeatInLoop();
-		}
-	);
-}
-void TcpServer::AsyncListenInLoop() {
-	SocketPtr pSock = std::make_shared<tcp::socket>(_acceptor.get_executor());
-	_acceptor.async_accept(*pSock, [this, pSock](const error_code& code) { // pSock: capture by value, keep alive
-			if (code) {
-				log(error, "TcpServer") << "async accept failure, error message: " << code.message();
-				return;
-			}
-
-			TcpConnectionPtr pConnection = std::make_shared<TcpConnection>(std::move(*pSock));
-			pConnection->SetID(_counter);
-			pConnection->SetMessageCallback(_messageCallback);
-			pConnection->SetCloseCallback(std::bind(&TcpServer::RemoveConnection, this, std::placeholders::_1));
-			pConnection->Established();
-			_tcpConnections.insert({ _counter++, pConnection });
-
-			_connectionCallback(pConnection);
-
-			AsyncListenInLoop();
-		}
-	);
-}
-
-/// TcpClient
-TcpClient::TcpClient(IOContext& ctx, std::string name) :
-	TcpServices(name),
-	_ctx(ctx),
-	_pConnection(std::make_shared<TcpConnection>(std::move(tcp::socket(ctx.Get())))) {
-
-}
-
-bool TcpClient::IsConnectioned() {
-	if (_pConnection) {
-		return _pConnection->IsConnectioned();
-	}
-
-	return false;
-}
-void TcpClient::AsyncConnect(std::string ip, unsigned int port) {
-	tcp::endpoint endpoint = tcp::endpoint(boost::asio::ip::address::from_string(ip), port);
-	_pConnection->GetSocket().async_connect(endpoint,
-		[this](const error_code& code) {
+void TcpService::AsyncListenInLoop() {
+	TcpConnectionPtr pConnection = std::make_shared<TcpConnection>(std::move(tcp::socket(_io_context)));
+	_acceptor.async_accept(pConnection->GetSocket(), [this, pConnection](const error_code& code) { // pSock: capture by value, keep alive
 		if (code) {
-			log(error, "TcpClient") << "connect failure, error message: " << code.message();
+			log(error, "TcpService") << "async accept failure, error message: " << code.message();
 			return;
 		}
 
-		_pConnection->SetMessageCallback(_messageCallback);
-		_pConnection->SetCloseCallback(std::bind(&TcpClient::DestroyConnection, this, std::placeholders::_1));
-		_pConnection->Established();
+		pConnection->SetMessageCallback(_messageCallback);
+		pConnection->SetCloseCallback(std::bind(&TcpService::RemovePassiveConnection, this, std::placeholders::_1));
+		pConnection->OnEstablish();
+
+		_passiveConnections.insert({ pConnection->GetID(), pConnection });
+
+		_connectionCallback(pConnection);
+
+		AsyncListenInLoop();
 		}
 	);
 }
 
-void TcpClient::Close() {
-	if (_pConnection) _pConnection->Disconnect();
+void TcpService::Start() {
+	_io_thread = std::thread([this] {_io_context.run(); });
 }
 
-void TcpClient::DestroyConnection(const TcpConnectionPtr& pConnection) {
-	assert(pConnection == _pConnection);
+void TcpService::Close() {
+	for (auto it = _activeConnections.begin(); it != _activeConnections.end();) {
+		const TcpConnectionPtr& pConnection = it->second;
+		if (pConnection && pConnection->IsConnectioned()) {
+			pConnection->Disconnect();
+		}
+		else {
+			++it;
+		}
+	}
 
-	_pConnection.reset();
-}
-
-void TcpClient::AsyncSend(Buffer & buf) {
-	if (_pConnection) _pConnection->AsyncSend(buf);
+	for (auto it = _passiveConnections.begin(); it != _passiveConnections.end();) {
+		const TcpConnectionPtr& pConnection = it->second;
+		if (pConnection && pConnection->IsConnectioned()) {
+			pConnection->Disconnect();
+		}
+		else {
+			++it;
+		}
+	}
 }

@@ -31,9 +31,7 @@ void LoginUserManager::OnRequestRsaPublicKey(const TcpConnectionPtr& pConnection
 	if (pMsg) {
 		pMsg->set_publickey(_public_key);
 
-		Buffer buf;
-		ProtobufCodec::PackMessage(pMsg, buf);
-		pConnection->AsyncSend(buf);
+		pConnection->AsyncSend(pMsg);
 	}
 }
 
@@ -61,9 +59,7 @@ bool LoginUserManager::SendRegisterResult(const TcpConnectionPtr& pConnection, i
 	if (pMsg) {
 		pMsg->set_result(result);
 
-		Buffer buf;
-		ProtobufCodec::PackMessage(pMsg, buf);
-		pConnection->AsyncSend(buf);
+		pConnection->AsyncSend(pMsg);
 	}
 
 	return true;
@@ -96,9 +92,7 @@ bool LoginUserManager::SendLoginResult(const TcpConnectionPtr& pConnection, int 
 	if (pMsg) {
 		pMsg->set_result(result);
 
-		Buffer buf;
-		ProtobufCodec::PackMessage(pMsg, buf);
-		pConnection->AsyncSend(buf);
+		pConnection->AsyncSend(pMsg);
 	}
 
 	return true;
