@@ -7,7 +7,7 @@ using namespace x::tool;
 
 DBConnection::DBConnection(const std::string& url){
 	_pSession = std::make_shared<Session>(url);
-	log(debug, "DBConnection") << "db connection success.";
+	log(debug, "DBConnection") << "db connection success. url: " << url;
 
 	Init();
 }

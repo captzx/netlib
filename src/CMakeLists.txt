@@ -1,3 +1,4 @@
+add_subdirectory(server_supervisor)
 add_subdirectory(server_gateway)
 add_subdirectory(server_login)
 add_subdirectory(test)

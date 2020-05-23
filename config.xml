@@ -7,19 +7,20 @@
     <_A_Type Type="3" Enum="GATEWAYSERVER" />
   </ServerType>
   <ServerInfo>
-    <_A_Server Type="1" Name="SupervisorServer" Port="1231" MaxConn="20" LogFile="./log/supervisor.log" >
+    <_A_Server Type="1" Name="SupervisorServer" Port="1231" LogFile="./log/supervisor.log" LogLevel="1">
     </_A_Server>
-    <_A_Server Type="2" Name="LoginServer" Port="1232" MaxConn="20" LogFile="./log/loginserver.log">
+    <_A_Server Type="2" Name="LoginServer" Port="1232" LogFile="./log/loginserver.log" LogLevel="1">
       <ConnectDB>
-        <_A_Connect ConnectInfo="" />
+        <_A_Connect Type="1" Url="mysqlx://zx:xin@localhost" />
       </ConnectDB>
       <ConnectServer>
-        <_A_Connect Type="1" IP="127.0.0.1" Port="" />
+        <_A_Connect Type="1" IP="127.0.0.1" Port="1231" />
+        <_A_Connect Type="3" IP="127.0.0.1" Port="1233" />
       </ConnectServer>
     </_A_Server>
-    <_A_Server Type="3" Name="GatewayServer" Port="1233" MaxConn="20" LogFile="./log/gatewayserver.log">
+    <_A_Server Type="3" Name="GatewayServer" Port="1233" LogFile="./log/gatewayserver.log" LogLevel="1">
       <ConnectServer>
-        <_A_Connect Type="1" IP="127.0.0.1" Port="" />
+        <_A_Connect Type="1" IP="127.0.0.1" Port="1231" />
       </ConnectServer>
     </_A_Server>
   </ServerInfo>

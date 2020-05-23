@@ -1,13 +1,6 @@
 #pragma once
-#include <xtools/Common.h>
-#include <xtools/Config.h>
-#include <xtools/Singleton.h>
-#include <xtools/Crypto.h>
-#include <xtools/DBConnection.h>
-
-#include <xnet/Using.h>
-#include <xnet/TcpService.h>
-#include <xnet/ProtobufProcess.h>
+#include "UseTools.h"
+#include "UseNet.h"
 
 #include <xprotos/Server.pb.h>
 #include <xprotos/Login.pb.h>
@@ -19,9 +12,9 @@ namespace x {
 namespace login {
 
 /// class LoginServer
-class LoginServer {
+class LoginServer : public Singleton<LoginServer> {
 public:
-	explicit LoginServer(std::string);
+	explicit LoginServer();
 
 public:
 	void Start(); 
@@ -32,32 +25,19 @@ public:
 	void OnConnection(const TcpConnectionPtr&);
 	void OnHeartBeat(const TcpConnectionPtr&, const std::shared_ptr<HeartBeat>&);
 
+public:
+	DBConnectionPtr GetLoginDBConnection() { return _pDBLoginConnection; }
+
 private:
+	ServerCfg* _pSvrCfg;
+
 	TcpServicePtr _pTcpService;
 	ProtobufDispatcher _dispatcher;
 	ProtobufCodec _codec;
 
 	TcpConnectionPtr _pGateWayConnection;
-	
-public:
-	static DBConnectionPtr GetLoginDBConnection() { return _pDBLoginConnection; }
-public:
-	static DBConnectionPtr _pDBLoginConnection;
-};
+	DBConnectionPtr _pDBLoginConnection;
 
-/// class LoginConfig
-class LoginConfig : public Config, public Singleton<LoginConfig> {
-	friend class LoginServer;
-public:
-	virtual bool Parse() override;
-
-public:
-	unsigned int GetListenPort() { return _netPort; }
-	const std::string& GetLogFile() { return _logFile; }
-
-private:
-	std::string _logFile;
-	unsigned int _netPort;
 };
 
 } // namespace login

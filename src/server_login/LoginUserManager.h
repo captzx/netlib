@@ -1,5 +1,4 @@
 #pragma once
-#include <xtools/Uuid.h>
 #include <xprotos/Login.pb.h>
 
 #include "LoginServer.h"

@@ -4,11 +4,11 @@ project(${TARGETNAME})
 
 add_compile_options(-DBOOST_ALL_DYN_LINK)
 set(CMAKE_BUILD_TYPE "debug")
-set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb -std=c++11")
+set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb -std=c++17")
 set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
 
 set(HEADERS
-	Using.h
+	UseTools.h
 	Buffer.h
 	TcpService.h
 	ProtobufProcess.h

@@ -1,11 +1,10 @@
-#include <xtools/Common.h>
 #include "GatewayServer.h"
 
 using x::gateway::GatewayServer;
 
 int main() {
-	GatewayServer gatewayServer("GatewayServer");
-	gatewayServer.Start();
-	while (1);
+	GlobalConfig::GetInstance().LoadFile("config.xml");
+	GatewayServer::GetInstance().Start();
+
 	return 0;
 }

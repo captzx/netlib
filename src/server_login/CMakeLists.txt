@@ -1,5 +1,7 @@
 set(TARGETNAME LoginServer)
 
+include_directories(../server_common)
+
 set(SRCS
 	LoginServer.cpp
 	LoginUser.cpp

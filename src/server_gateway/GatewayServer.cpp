@@ -1,55 +1,41 @@
 #include "GatewayServer.h"
 
 using namespace x::gateway;
-using namespace x::tool;
 
 /// GatewayServer
-GatewayServer::GatewayServer(std::string name):
+GatewayServer::GatewayServer():
 	_dispatcher(std::bind(&GatewayServer::DefaultMessageCallback, this, std::placeholders::_1, std::placeholders::_2)),
 	_codec(std::bind(&ProtobufDispatcher::RecvMessage, &_dispatcher, std::placeholders::_1, std::placeholders::_2)) {
 
-	_pTcpService = std::make_shared<TcpService>(name);
-
-	_pTcpService->SetMessageCallback(std::bind(&ProtobufCodec::RecvMessage, &_codec, std::placeholders::_1, std::placeholders::_2));
-	_pTcpService->SetConnectionCallback(std::bind(&GatewayServer::OnConnection, this, std::placeholders::_1));
 }
 
 void GatewayServer::Start() {
-	GatewayConfig::GetInstance().LoadFile("config.xml");
-	global_logger_init(GatewayConfig::GetInstance().GetLogFile());
-	global_logger_set_filter(severity >= trivial);
-	_pTcpService->AsyncListen(GatewayConfig::GetInstance().GetListenPort());
+	_pSvrCfg = GlobalConfig::GetInstance().GetServerCfgByType(ServerType::GATEWAY);
+	if (!_pSvrCfg) {
+		std::cout << "start GatewayServer failure, error code: config missing.";
+		return;
+	}
+
+	global_logger_init(_pSvrCfg->LogFile);
+	global_logger_set_filter(severity >= (severity_level)_pSvrCfg->LogLevel);
+
+	_pTcpService = std::make_shared<TcpService>(_pSvrCfg->Name);
+
+	_pTcpService->SetMessageCallback(std::bind(&ProtobufCodec::RecvMessage, &_codec, std::placeholders::_1, std::placeholders::_2));
+	_pTcpService->SetConnectionCallback(std::bind(&GatewayServer::OnConnection, this, std::placeholders::_1));
+
+	_pTcpService->AsyncListen(_pSvrCfg->Port);
 	_pTcpService->Start();
-	log(debug, "GatewayServer") << "gateway server start.";
+
+	log(debug, "GatewayServer") << "GatewayServer start.";
+
+	while (1); // fix
 }
 
 void GatewayServer::DefaultMessageCallback(const TcpConnectionPtr&, const MessagePtr&) {
-	log(debug, "GatewayServer") << "login server default message call back.";
+	log(debug, "GatewayServer") << "GatewayServer default message call back.";
 }
 
 void GatewayServer::OnConnection(const TcpConnectionPtr&) {
 	log(debug, "GatewayServer") << "on Connection.";
-}
-
-/// GatewayConfig
-bool GatewayConfig::Parse() {
-	const std::shared_ptr<XMLDocument>& pDoc = GetXmlDoc();
-	if (!pDoc) {
-		std::cout << "xml document not found, is file exist?" << std::endl;
-		return false;
-	}
-
-	XMLElement* pRoot = pDoc->RootElement();
-	if (!pRoot) return false;
-
-	XMLElement* pGatewayServer = pRoot->FirstChildElement("GatewayServer");
-	if (pGatewayServer) {
-		XMLElement* pTagLog = pGatewayServer->FirstChildElement("Log");
-		if (pTagLog) _logFile = pTagLog->Attribute("output");
-
-		XMLElement* pTagNet = pGatewayServer->FirstChildElement("Net");
-		if (pTagNet) pTagNet->QueryUnsignedAttribute("port", &_netPort);
-	}
-
-	return true;
 }

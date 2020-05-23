@@ -4,20 +4,20 @@ project(${TARGETNAME})
 
 add_compile_options(-DBOOST_ALL_DYN_LINK)
 set(CMAKE_BUILD_TYPE "debug")
-set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb -std=c++11")
+set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb -std=c++17")
 set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
 
 set(HEADERS
 	Common.h
+	Config.h
+	Crypto.h
+	DBConnection.h
+	Logger.h
+	NoCopyable.h
+	Singleton.h
 	Type.h
 	Time.h
-	Config.h
-	Logger.h
-	Singleton.h
-	NoCopyable.h
-	Crypto.h
-	Uuid.h
-	DBConnection.h)
+	Uuid.h)
 set(HEADER_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/../../include)
 install(FILES ${HEADERS} DESTINATION ${HEADER_OUTPUT_PATH}/${TARGETNAME})
 

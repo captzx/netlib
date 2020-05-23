@@ -1,9 +1,11 @@
 #pragma once
 
 #include <string>
-#include <tinyxml2.h>
 
+#include <tinyxml2.h>
 using namespace tinyxml2;
+
+#include "Singleton.h"
 
 namespace x {
 
@@ -35,11 +37,31 @@ private:
 	std::string _fileName;
 };
 
+enum class ServerType {
+	SUPERVISOR = 1,
+	LOGIN = 2,
+	GATEWAY = 3,
+};
+
 struct ServerCfg {
-	std::string IP;
-	unsigned int Port;
-	unsigned int MaxConn;
+	unsigned int Type = 0;
+	unsigned int Port = 0;
+	unsigned int LogLevel = 0;
+	std::string Name;
 	std::string LogFile;
+
+	struct ConnectDB {
+		unsigned int Type = 0;
+		std::string Url;
+	};
+	std::vector<ConnectDB> ConnectDBCfgs;
+
+	struct ConnectServer {
+		unsigned int Type = 0;
+		unsigned int Port = 0;
+		std::string IP;
+	};
+	std::vector<ConnectServer> ConnectSvrCfgs;
 };
 
 /// class GlobalConfig
@@ -55,20 +77,59 @@ public:
 		XMLElement* pRoot = pDoc->RootElement();
 		if (!pRoot) return false;
 
-		XMLElement* pLoginServer = pRoot->FirstChildElement("LoginServer");
-		if (pLoginServer) {
-			XMLElement* pTagLog = pLoginServer->FirstChildElement("Log");
-			if (pTagLog) _logFile = pTagLog->Attribute("output");
+		XMLElement* pServerInfo = pRoot->FirstChildElement("ServerInfo");
+		if (pServerInfo) {
+			XMLElement* pServer = pServerInfo->FirstChildElement("_A_Server");
+			for (; pServer ; pServer = pServer->NextSiblingElement("_A_Server")) {
+				ServerCfg serverCfg;
+				serverCfg.Type = pServer->UnsignedAttribute("Type");
+				serverCfg.Name = std::string(pServer->Attribute("Name"));
+				serverCfg.Port = pServer->UnsignedAttribute("Port");
+				serverCfg.LogFile = std::string(pServer->Attribute("LogFile"));
+				serverCfg.LogLevel = pServer->UnsignedAttribute("LogLevel");
 
-			XMLElement* pTagNet = pLoginServer->FirstChildElement("Net");
-			if (pTagNet) pTagNet->QueryUnsignedAttribute("port", &_netPort);
+				XMLElement* pConnectDB = pServer->FirstChildElement("ConnectDB");
+				if (pConnectDB) {
+					XMLElement* pPerDB = pConnectDB->FirstChildElement("_A_Connect");
+					for (; pPerDB; pPerDB = pPerDB->NextSiblingElement("_A_Connect")) {
+						ServerCfg::ConnectDB cDB;
+						cDB.Type = pPerDB->UnsignedAttribute("Type");
+						cDB.Url = std::string(pPerDB->Attribute("Url"));
+
+						serverCfg.ConnectDBCfgs.push_back(cDB);
+					}
+				}
+				
+
+				XMLElement* pConnectServer = pServer->FirstChildElement("ConnectServer");
+				if (pConnectDB) {
+					XMLElement* pPerSvr = pConnectServer->FirstChildElement("_A_Connect");
+					for (; pPerSvr; pPerSvr = pPerSvr->NextSiblingElement("_A_Connect")) {
+						ServerCfg::ConnectServer cServer;
+						cServer.Type = pPerSvr->UnsignedAttribute("Type");
+						cServer.IP = std::string(pPerSvr->Attribute("IP"));
+						cServer.Port = pPerSvr->UnsignedAttribute("Port");
+
+						serverCfg.ConnectSvrCfgs.push_back(cServer);
+					}
+				}
+
+				_serverCfgs[serverCfg.Type] = serverCfg;
+			}
 		}
 
 		return true;
 	}
 
 public:
-	unsigned int GetServerCfgByType() { return _netPort; }
+	ServerCfg* GetServerCfgByType(ServerType type) {
+		auto it = _serverCfgs.find((int)type);
+		if (it != _serverCfgs.end()) {
+			return &(it->second);
+		}
+
+		return nullptr;
+	}
 
 private:
 	std::map<int, ServerCfg> _serverCfgs;

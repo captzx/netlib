@@ -1,10 +1,7 @@
 #include <xtools/Common.h>
-#include <xnet/ProtobufProcess.h>
-#include <xnet/Buffer.h>
-#include <xnet/TcpService.h>
 
-#include <xtools/Crypto.h>
-#include <xtools/Singleton.h>
+#include "UseTools.h"
+#include "UseNet.h"
 
 #include <xprotos/Server.pb.h>
 #include <xprotos/Login.pb.h>
@@ -38,7 +35,7 @@ public:
 	}
 
 	void Start() { 
-		_pConnection = _pTcpService->AsyncConnect("127.0.0.1", 1234);
+		_pConnection = _pTcpService->AsyncConnect("127.0.0.1", 1232);
 
 		_pTcpService->Start();
 	}

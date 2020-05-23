@@ -1,9 +1,5 @@
 #include "LoginUserManager.h"
 
-#include <mysqlx/xdevapi.h>
-
-#include <xtools/Time.h>
-
 #include "LoginUser.h"
 #include "LoginServer.h"
 
@@ -75,7 +71,7 @@ void LoginUserManager::OnRequestLogin(const TcpConnectionPtr& pConnection, const
 
 	oss << "SELECT user.`pwd` FROM x_login.user WHERE user.`act` = '" << account << "';";
 	
-	SqlResult result = LoginServer::GetLoginDBConnection()->ExecuteSql(oss.str());
+	SqlResult result = LoginServer::GetInstance().GetLoginDBConnection()->ExecuteSql(oss.str());
 	if (result.count() == 0) SendLoginResult(pConnection, 1);
 	else {
 		assert(result.count() == 1);
@@ -103,7 +99,7 @@ bool LoginUserManager::VerifyAccount(const std::string& account) {
 
 	oss << "SELECT user.`act` FROM x_login.user WHERE user.`act` = '" << account << "';";
 
-	SqlResult result = LoginServer::GetLoginDBConnection()->ExecuteSql(oss.str());
+	SqlResult result = LoginServer::GetInstance().GetLoginDBConnection()->ExecuteSql(oss.str());
 
 	if (result.count() != 0) {
 		log(debug, "LoginUserManager") << "account existed, login or pick another!";
@@ -134,7 +130,7 @@ bool LoginUserManager::SaveUser(const std::shared_ptr<LoginUser>& pUser, const s
 
 	oss << "INSERT INTO x_login.user(`id`, `act`, `pwd`) VALUES (" << pUser->GetID() << ", '" << account << "', '" << encrypt << "');";
 
-	LoginServer::GetLoginDBConnection()->ExecuteSql(oss.str());
+	LoginServer::GetInstance().GetLoginDBConnection()->ExecuteSql(oss.str());
 
 	return true;
 }

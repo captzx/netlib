@@ -6,7 +6,7 @@ if [ ! -d "build" ];then
 else
 	cd build
 	cmake ..
-	make -j6 
+	make
 	make install
 fi
 
@@ -17,7 +17,7 @@ if [ ! -d "build" ]; then
 else
 	cd build
 	cmake ..
-	make -j6
+	make
 	make install
 fi
 
@@ -27,7 +27,7 @@ if [ ! -d "build" ]; then
 else
 	cd build
 	cmake ..
-	make -j6
+	make
 	make install
 fi
 

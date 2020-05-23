@@ -1,5 +1,7 @@
 set(TARGETNAME GatewayServer)
 
+include_directories(../server_common)
+
 set(SRCS
 	GatewayServer.cpp
 	main.cpp)

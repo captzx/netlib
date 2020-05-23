@@ -1,16 +1,9 @@
 #pragma once
-#include <xtools/Common.h>
-#include <xtools/Config.h>
-#include <xtools/Singleton.h>
-#include <xtools/Crypto.h>
-#include <xtools/DBConnection.h>
 
-#include <xnet/Using.h>
-#include <xnet/TcpService.h>
-#include <xnet/ProtobufProcess.h>
+#include "UseTools.h"
+#include "UseNet.h"
 
 #include <xprotos/Server.pb.h>
-#include <xprotos/Login.pb.h>
 
 using namespace x::tool;
 using namespace x::net; 
@@ -19,9 +12,9 @@ namespace x {
 namespace gateway {
 
 /// class GatewayServer
-class GatewayServer {
+class GatewayServer : public Singleton<GatewayServer> {
 public:
-	explicit GatewayServer(std::string);
+	explicit GatewayServer();
 
 public:
 	void Start(); 
@@ -31,24 +24,11 @@ public:
 	void OnConnection(const TcpConnectionPtr&);
 
 private:
+	ServerCfg* _pSvrCfg;
+
 	TcpServicePtr _pTcpService;
 	ProtobufDispatcher _dispatcher;
 	ProtobufCodec _codec;
-};
-
-/// class LoginConfig
-class GatewayConfig : public Config, public Singleton<GatewayConfig> {
-	friend class GatewayServer;
-public:
-	virtual bool Parse() override;
-
-public:
-	unsigned int GetListenPort() { return _netPort; }
-	const std::string& GetLogFile() { return _logFile; }
-
-private:
-	std::string _logFile;
-	unsigned int _netPort;
 };
 
 } // namespace login

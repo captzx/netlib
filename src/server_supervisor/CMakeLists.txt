@@ -1,5 +1,7 @@
 set(TARGETNAME SupervisorServer)
 
+include_directories(../server_common)
+
 set(SRCS
 	SupervisorServer.cpp
 	main.cpp)

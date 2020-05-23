@@ -37,7 +37,3 @@
 #include <poll.h>
 
 #include <sys/timerfd.h>
-
-// x::tool
-#include "Type.h"
-#include "Time.h"

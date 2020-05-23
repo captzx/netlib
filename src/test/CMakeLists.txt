@@ -1,5 +1,7 @@
 set(TARGETNAME Client)
 
+include_directories(../server_common)
+
 set(SRCS 
 	test_client.cpp)
 
