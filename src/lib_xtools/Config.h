@@ -39,8 +39,11 @@ private:
 
 enum class ServerType {
 	SUPERVISOR = 1,
-	LOGIN = 2,
-	GATEWAY = 3,
+	GATEWAY = 2,
+	LOGIN = 3,
+	DATA = 4,
+	CENTER = 5,
+	SCENE = 6
 };
 
 struct ServerCfg {
@@ -51,7 +54,7 @@ struct ServerCfg {
 	std::string LogFile;
 
 	struct ConnectDB {
-		unsigned int Type = 0;
+		unsigned int Type;
 		std::string Url;
 	};
 	std::vector<ConnectDB> ConnectDBCfgs;
@@ -102,7 +105,7 @@ public:
 				
 
 				XMLElement* pConnectServer = pServer->FirstChildElement("ConnectServer");
-				if (pConnectDB) {
+				if (pConnectServer) {
 					XMLElement* pPerSvr = pConnectServer->FirstChildElement("_A_Connect");
 					for (; pPerSvr; pPerSvr = pPerSvr->NextSiblingElement("_A_Connect")) {
 						ServerCfg::ConnectServer cServer;

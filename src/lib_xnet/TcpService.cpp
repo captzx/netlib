@@ -39,7 +39,10 @@ void TcpConnection::OnEstablish() {
 	log(debug, "TcpConnection") << "socket is non-blocking mode? " << _sock.non_blocking() << ".";
 	log(debug, "TcpConnection") << "socket is open? " << _sock.is_open() << ".";
 
-	_state = Connected;
+	_state = Connected; 
+	_startTime = Now::Second();
+	_lastHeartBeat = _startTime;
+	_pid = (unsigned int)getpid();
 
 	_sock.async_wait(tcp::socket::wait_read, // Asynchronously wait for the socket to become ready to read, ready to write, or to have pending error conditions.
 		[this](const error_code& code) -> void {

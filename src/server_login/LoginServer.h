@@ -1,6 +1,6 @@
 #pragma once
-#include "UseTools.h"
-#include "UseNet.h"
+
+#include "Server.h"
 
 #include <xprotos/Server.pb.h>
 #include <xprotos/Login.pb.h>
@@ -12,31 +12,17 @@ namespace x {
 namespace login {
 
 /// class LoginServer
-class LoginServer : public Singleton<LoginServer> {
+class LoginServer : public Server, public Singleton<LoginServer> {
 public:
-	explicit LoginServer();
-
-public:
-	void Start(); 
-	bool SendHeartBeat(const TcpConnectionPtr&);
-	
-public:
-	void DefaultMessageCallback(const TcpConnectionPtr&, const MessagePtr&);
-	void OnConnection(const TcpConnectionPtr&);
-	void OnHeartBeat(const TcpConnectionPtr&, const std::shared_ptr<HeartBeat>&);
+	LoginServer();
+	virtual ~LoginServer() {}
 
 public:
-	DBConnectionPtr GetLoginDBConnection() { return _pDBLoginConnection; }
+	virtual void InitModule() override;
+	virtual ServerType GetServerType() override { return TYPE; }
 
-private:
-	ServerCfg* _pSvrCfg;
-
-	TcpServicePtr _pTcpService;
-	ProtobufDispatcher _dispatcher;
-	ProtobufCodec _codec;
-
-	TcpConnectionPtr _pGateWayConnection;
-	DBConnectionPtr _pDBLoginConnection;
+public:
+	const static ServerType TYPE = ServerType::LOGIN;
 
 };
 

@@ -1,7 +1,6 @@
 #pragma once
 
-#include "UseTools.h"
-#include "UseNet.h"
+#include "Server.h"
 
 #include <xprotos/Server.pb.h>
 
@@ -11,26 +10,20 @@ using namespace x::net;
 namespace x {
 namespace gateway {
 
-/// class GatewayServer
-class GatewayServer : public Singleton<GatewayServer> {
-public:
-	explicit GatewayServer();
+	/// class GatewayServer
+	class GatewayServer : public Server, public Singleton<GatewayServer> {
+	public:
+		GatewayServer();
+		virtual ~GatewayServer() { }
 
-public:
-	void Start(); 
-	
-public:
-	void DefaultMessageCallback(const TcpConnectionPtr&, const MessagePtr&);
-	void OnConnection(const TcpConnectionPtr&);
+	public:
+		virtual void InitModule() override;
+		virtual ServerType GetServerType() override { return TYPE; }
 
-private:
-	ServerCfg* _pSvrCfg;
+	public:
+		const static ServerType TYPE = ServerType::GATEWAY;
+	};
 
-	TcpServicePtr _pTcpService;
-	ProtobufDispatcher _dispatcher;
-	ProtobufCodec _codec;
-};
-
-} // namespace login
+} // namespace gateway
 } // namespace x
 

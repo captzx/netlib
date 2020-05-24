@@ -1,35 +1,28 @@
 #pragma once
-#include "UseTools.h"
-#include "UseNet.h"
+
+#include "Server.h"
 
 #include <xprotos/Server.pb.h>
-
-using namespace x::tool;
-using namespace x::net; 
 
 namespace x {
 namespace supervisor {
 
 /// class SupervisorServer
-class SupervisorServer : public Singleton<SupervisorServer> {
+class SupervisorServer : public Server, public Singleton<SupervisorServer> {
 public:
-	explicit SupervisorServer();
+	SupervisorServer();
+	virtual ~SupervisorServer(){ }
 
 public:
-	void Start(); 
-	
+	virtual void InitModule() override;
+	virtual ServerType GetServerType() override { return TYPE; }
+
 public:
-	void DefaultMessageCallback(const TcpConnectionPtr&, const MessagePtr&);
-	void OnConnection(const TcpConnectionPtr&);
-
-private:
-	ServerCfg* _pSvrCfg;
-
-	TcpServicePtr _pTcpService;
-	ProtobufDispatcher _dispatcher;
-	ProtobufCodec _codec;
+	void AsyncHeartBeatInLoop(std::shared_ptr<boost::asio::deadline_timer> pTimer);
+public: 
+	const static ServerType TYPE = ServerType::SUPERVISOR;
 };
 
-} // namespace login
+} // namespace supervisor
 } // namespace x
 

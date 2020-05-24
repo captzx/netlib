@@ -35,7 +35,7 @@ public:
 	}
 
 	void Start() { 
-		_pConnection = _pTcpService->AsyncConnect("127.0.0.1", 1232);
+		_pConnection = _pTcpService->AsyncConnect("127.0.0.1", 1235);
 
 		_pTcpService->Start();
 	}
@@ -120,7 +120,7 @@ public:
 
 		log(debug, "TestClient") << "client onConnection, start op.";
 	}
-	void OnHeartBeat(const TcpConnectionPtr& pConnection, const std::shared_ptr<HeartBeat>& pMessage) {
+	/*void OnHeartBeat(const TcpConnectionPtr& pConnection, const std::shared_ptr<HeartBeat>& pMessage) {
 		unsigned int now = Now::Second();
 		int diff = pMessage->time() - now;
 
@@ -130,7 +130,7 @@ public:
 
 		pMessage->set_time(now);
 		pConnection->AsyncSend(pMessage);
-	}
+	}*/
 	void OnResponseRsaPublicKey(const TcpConnectionPtr& pConnection, const std::shared_ptr<ResponseRsaPublicKey>& pMessage) {
 		_key = pMessage->publickey();
 	}

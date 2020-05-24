@@ -47,12 +47,19 @@ public:
 
 	bool IsConnectioned() { return _state == Connected; }
 	tcp::socket& GetSocket() { return _sock; }
+
 	unsigned int GetLastHeartBeatTime() { return _lastHeartBeat; }
 	void SetLastHeartBeatTime(unsigned int time) { _lastHeartBeat = time; }
-public:
-
+	unsigned int GetPid() { return _pid; }
+	std::string GetLocalEndpoint() { 
+		std::ostringstream oss;
+		oss << _sock.local_endpoint();
+		return oss.str();
+	}
+	unsigned int GetStartTime() { return _startTime; }
 	void SetID(int id) { _id = id; }
 	int GetID() { return _id; }
+	void SetType(unsigned int type) { _type = type; }
 
 public:
 	void SetMessageCallback(MessageCallback callback) { _messageCallback = callback; }
@@ -62,6 +69,9 @@ private:
 	tcp::socket _sock;
 
 	int _id;
+	unsigned int _type; 
+	unsigned int _pid;
+	unsigned int _startTime;
 	State _state;
 
 	Buffer _buf;
@@ -75,6 +85,7 @@ private:
 public:
 	static int Count;
 };
+using TcpConnectionManager = std::map<int, TcpConnectionPtr>;
 
 /// TcpService
 class TcpService {
@@ -101,13 +112,18 @@ private:
 	void AsyncHeartBeatInLoop();
 	void AsyncListenInLoop();
 
+public:
+	unsigned int GetActiveConnectCount() { return _activeConnections.size(); }
+	unsigned int GetPassiveConnectCount() { return _passiveConnections.size(); }
+	TcpConnectionManager& GetActiveConnectionMgr() { return _activeConnections; }
+	TcpConnectionManager& GetPassiveConnectionMgr() { return _passiveConnections; }
+	io_context& GetIOContext() { return _io_context; }
 private:
 	std::string _name;
 	io_context _io_context;
 	tcp::acceptor _acceptor;
 	boost::asio::deadline_timer _heartTimer;
 
-	using TcpConnectionManager = std::map<int, TcpConnectionPtr>;
 	TcpConnectionManager _activeConnections;
 	TcpConnectionManager _passiveConnections;
 

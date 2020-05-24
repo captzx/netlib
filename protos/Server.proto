@@ -1,5 +1,14 @@
 syntax = "proto3";
 
-message HeartBeat {
-  uint32 time = 1;
+message ActiveHeartBeat{
+	uint32 last_hb_time = 1;
+}
+
+message PassiveHeartBeat {
+  uint32 last_hb_time = 1;
+  uint32 cnt_start_time = 2;
+  string address = 3;
+  uint32 pid = 4;
+  uint32 atv_count = 5;
+  uint32 psv_count = 6;
 }

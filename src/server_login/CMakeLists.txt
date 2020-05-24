@@ -3,6 +3,7 @@ set(TARGETNAME LoginServer)
 include_directories(../server_common)
 
 set(SRCS
+	../server_common/Server.cpp
 	LoginServer.cpp
 	LoginUser.cpp
 	LoginUserManager.cpp

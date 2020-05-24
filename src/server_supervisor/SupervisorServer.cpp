@@ -1,41 +1,32 @@
 #include "SupervisorServer.h"
 
+#include <boost/asio.hpp>
+using namespace boost::asio;
+
 using namespace x::supervisor;
 
 /// SupervisorServer
-SupervisorServer::SupervisorServer():
-	_dispatcher(std::bind(&SupervisorServer::DefaultMessageCallback, this, std::placeholders::_1, std::placeholders::_2)),
-	_codec(std::bind(&ProtobufDispatcher::RecvMessage, &_dispatcher, std::placeholders::_1, std::placeholders::_2)) {
+const ServerType SupervisorServer::TYPE;
+
+SupervisorServer::SupervisorServer() {
 
 }
 
-void SupervisorServer::Start() {
-	_pSvrCfg = GlobalConfig::GetInstance().GetServerCfgByType(ServerType::SUPERVISOR);
-	if (!_pSvrCfg) {
-		std::cout << "start SupervisorServer failure, error code: config missing.";
-		return;
-	}
-
-	global_logger_init(_pSvrCfg->LogFile);
-	global_logger_set_filter(severity >= (severity_level)_pSvrCfg->LogLevel);
-
-	_pTcpService = std::make_shared<TcpService>(_pSvrCfg->Name);
-
-	_pTcpService->SetMessageCallback(std::bind(&ProtobufCodec::RecvMessage, &_codec, std::placeholders::_1, std::placeholders::_2));
-	_pTcpService->SetConnectionCallback(std::bind(&SupervisorServer::OnConnection, this, std::placeholders::_1));
-
-	_pTcpService->AsyncListen(_pSvrCfg->Port);
-	_pTcpService->Start();
-
-	log(debug, "SupervisorServer") << "SupervisorServer start.";
-
-	while (1); // fix
+void SupervisorServer::InitModule() {
+	ProtobufDispatcher& dispatcher = SupervisorServer::GetInstance().GetDispatcher();
+	dispatcher.RegisterMessageCallback<PassiveHeartBeat>(std::bind(&SupervisorServer::OnPassiveHeartBeat, this, std::placeholders::_1, std::placeholders::_2));
+	
+	std::shared_ptr<deadline_timer> pTimer = std::make_shared<deadline_timer>(_pTcpService->GetIOContext());
+	pTimer->expires_from_now(boost::posix_time::seconds(_heartbeatPeriod));
+	AsyncHeartBeatInLoop(pTimer);
 }
 
-void SupervisorServer::DefaultMessageCallback(const TcpConnectionPtr&, const MessagePtr&) {
-	log(debug, "SupervisorServer") << "SupervisorServer default message call back.";
-}
+void SupervisorServer::AsyncHeartBeatInLoop(std::shared_ptr<deadline_timer> pTimer) {
+	pTimer->async_wait([this, pTimer](const error_code& ec) {
+		CheckHeartBeat();
 
-void SupervisorServer::OnConnection(const TcpConnectionPtr&) {
-	log(debug, "SupervisorServer") << "on Connection.";
+		pTimer->expires_from_now(boost::posix_time::seconds(_heartbeatPeriod));
+		AsyncHeartBeatInLoop(pTimer);
+		}
+	);
 }

@@ -21,7 +21,7 @@ public:
 	void Init();
 
 public:
-	void RegisterMessageCallback(ProtobufDispatcher&);
+	void RegisterMessageCallback();
 
 public:
 	void OnRequestRsaPublicKey(const TcpConnectionPtr& pConnection, const std::shared_ptr<RequestRsaPublicKey>&);

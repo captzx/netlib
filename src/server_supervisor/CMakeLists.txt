@@ -3,6 +3,7 @@ set(TARGETNAME SupervisorServer)
 include_directories(../server_common)
 
 set(SRCS
+	../server_common/Server.cpp
 	SupervisorServer.cpp
 	main.cpp)
 

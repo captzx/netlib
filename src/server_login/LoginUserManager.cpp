@@ -16,7 +16,9 @@ void LoginUserManager::Init() {
 	_uuidGenerator.Init(0, 0);
 }
 
-void LoginUserManager::RegisterMessageCallback(ProtobufDispatcher& dispatcher) {
+void LoginUserManager::RegisterMessageCallback() {
+	ProtobufDispatcher& dispatcher = LoginServer::GetInstance().GetDispatcher();
+
 	dispatcher.RegisterMessageCallback<RequestRsaPublicKey>(std::bind(&LoginUserManager::OnRequestRsaPublicKey, this, std::placeholders::_1, std::placeholders::_2));
 	dispatcher.RegisterMessageCallback<RequestRegister>(std::bind(&LoginUserManager::OnRequestRegister, this, std::placeholders::_1, std::placeholders::_2));
 	dispatcher.RegisterMessageCallback<RequestLogin>(std::bind(&LoginUserManager::OnRequestLogin, this, std::placeholders::_1, std::placeholders::_2));
@@ -70,8 +72,9 @@ void LoginUserManager::OnRequestLogin(const TcpConnectionPtr& pConnection, const
 	std::ostringstream oss;
 
 	oss << "SELECT user.`pwd` FROM x_login.user WHERE user.`act` = '" << account << "';";
-	
-	SqlResult result = LoginServer::GetInstance().GetLoginDBConnection()->ExecuteSql(oss.str());
+
+	DBServicePtr& pDBService = LoginServer::GetInstance().GetDBService();
+	SqlResult result = pDBService->GetDBConnectionByType((unsigned int)DBType::x_login)->ExecuteSql(oss.str());
 	if (result.count() == 0) SendLoginResult(pConnection, 1);
 	else {
 		assert(result.count() == 1);
@@ -98,8 +101,9 @@ bool LoginUserManager::VerifyAccount(const std::string& account) {
 	std::ostringstream oss;
 
 	oss << "SELECT user.`act` FROM x_login.user WHERE user.`act` = '" << account << "';";
-
-	SqlResult result = LoginServer::GetInstance().GetLoginDBConnection()->ExecuteSql(oss.str());
+	
+	DBServicePtr& pDBService = LoginServer::GetInstance().GetDBService();
+	SqlResult result = pDBService->GetDBConnectionByType((unsigned int)DBType::x_login)->ExecuteSql(oss.str());
 
 	if (result.count() != 0) {
 		log(debug, "LoginUserManager") << "account existed, login or pick another!";
@@ -130,7 +134,8 @@ bool LoginUserManager::SaveUser(const std::shared_ptr<LoginUser>& pUser, const s
 
 	oss << "INSERT INTO x_login.user(`id`, `act`, `pwd`) VALUES (" << pUser->GetID() << ", '" << account << "', '" << encrypt << "');";
 
-	LoginServer::GetInstance().GetLoginDBConnection()->ExecuteSql(oss.str());
+	DBServicePtr& pDBService = LoginServer::GetInstance().GetDBService();
+	pDBService->GetDBConnectionByType((unsigned int)DBType::x_login)->ExecuteSql(oss.str());
 
 	return true;
 }
