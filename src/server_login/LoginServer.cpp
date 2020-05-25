@@ -1,8 +1,10 @@
 #include "LoginServer.h"
 
 #include "LoginUserManager.h"
+#include "ZoneServerManager.h"
 
 using namespace x::login;
+using namespace mysqlx;
 
 /// LoginServer
 LoginServer::LoginServer(){
@@ -15,4 +17,7 @@ void LoginServer::InitModule() {
 
 	LoginUserManager::GetInstance().Init();
 	LoginUserManager::GetInstance().RegisterMessageCallback();
+
+	ZoneServerManager::GetInstance().InitServerList();
+	ZoneServerManager::GetInstance().RegisterMessageCallback();
 }

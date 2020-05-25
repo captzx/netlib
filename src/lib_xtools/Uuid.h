@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include "Type.h"
+
 namespace x {
 
 namespace tool {
@@ -10,16 +12,16 @@ public:
 
 public:
 	void Init(long worker, long type, long seq = 0L);
-	long long Get();
+	ull Get();
 
 private:
-	long long WaitToNextMillis(long long last_time);
+	ull WaitToNextMillis(const ull last_time);
 
 private:
 	long _worker;
 	long _type;
 	long _seq;
-	long _last_time;
+	ull _last_time;
 };
 
 }

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<Root>
+  <ServerType>
+    <_A_Type Type="1" Enum="SUPERVISORSERVER" />
+    <_A_Type Type="2" Enum="GATEWAYSERVER" />
+    <_A_Type Type="3" Enum="LOGINSERVER" />
+    <_A_Type Type="4" Enum="DATASERVER" />
+    <_A_Type Type="5" Enum="CENTERSERVER" />
+    <_A_Type Type="6" Enum="SCENESERVER" />
+  </ServerType>
+  <ServerInfo>
+    <_A_Server Type="1" Name="SupervisorServer" Port="1231" LogFile="./log/supervisor.log" LogLevel="1">
+    </_A_Server>
+    <_A_Server Type="2" Name="GatewayServer" Port="1233" LogFile="./log/gatewayserver.log" LogLevel="1">
+      <ConnectServer>
+        <_A_Connect Type="1" IP="127.0.0.1" Port="1231" />
+        <_A_Connect Type="4" IP="127.0.0.1" Port="1237" />
+      </ConnectServer>
+    </_A_Server>
+    <_A_Server Type="3" Name="LoginServer" Port="1235" LogFile="./log/loginserver.log" LogLevel="1">
+      <ConnectDB>
+        <_A_Connect Type="1" DBEnum="x_login" Url="mysqlx://zx:@localhost" />
+      </ConnectDB>
+      <ConnectServer>
+        <_A_Connect Type="1" IP="127.0.0.1" Port="1231" />
+      </ConnectServer>
+    </_A_Server>
+    <_A_Server Type="4" Name="DataServer" Port="1237" LogFile="./log/dataserver.log" LogLevel="1">
+      <ConnectDB>
+        <_A_Connect Type="2" DBEnum="x_data" Url="mysqlx://zx:@localhost" />
+      </ConnectDB>
+      <ConnectServer>
+        <_A_Connect Type="1" IP="127.0.0.1" Port="1231" />
+      </ConnectServer>
+    </_A_Server>
+    <_A_Server Type="5" Name="CenterServer" Port="1239" LogFile="./log/centerserver.log" LogLevel="1">
+      <ConnectServer>
+        <_A_Connect Type="1" IP="127.0.0.1" Port="1231" />
+      </ConnectServer>
+    </_A_Server>
+    <_A_Server Type="6" Name="SceneServer" Port="1241" LogFile="./log/sceneserver.log" LogLevel="1">
+      <ConnectServer>
+        <_A_Connect Type="1" IP="127.0.0.1" Port="1231" />
+      </ConnectServer>
+    </_A_Server>
+  </ServerInfo>
+</Root>

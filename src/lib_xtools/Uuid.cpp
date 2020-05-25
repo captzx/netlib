@@ -5,7 +5,7 @@
 
 using namespace x::tool;
 
-const long TWEPOCH = 1288834974657L;
+const ull TWEPOCH = 1288834974657L;
 
 const int WORJER_ID_BITS = 5;
 const int DATA_CENTER_ID_BITS = 5;
@@ -20,7 +20,7 @@ const int TIME_STAMP_L_SHIFT = SEQUENCE_BITS + WORJER_ID_BITS + DATA_CENTER_ID_B
 
 const long SEQUENCE_MASK = -1L ^ (-1L << SEQUENCE_BITS);
 
-UuidGenerator::UuidGenerator() : _worker(0), _type(0), _seq(0), _last_time(-1L) {
+UuidGenerator::UuidGenerator() : _worker(0), _type(0), _seq(0), _last_time(0) {
 
 }
 
@@ -33,8 +33,8 @@ void UuidGenerator::Init(long worker, long type, long seq) {
 	_seq = seq;
 }
 
-long long UuidGenerator::Get() {
-	long long now = Now::MilliSecond();
+ull UuidGenerator::Get() {
+	ull now = Now::MilliSecond();
 	assert(now >= _last_time);
 
 	if (_last_time == now) {
@@ -46,13 +46,13 @@ long long UuidGenerator::Get() {
 
 	_last_time = now;
 
-	long long id = ((now - TWEPOCH) << TIME_STAMP_L_SHIFT) | (_type << DATA_CENTER_ID_L_SHIFT) | (_worker << WORKER_ID_L_SHIFT) | _seq;
+	ull id = ((now - TWEPOCH) << TIME_STAMP_L_SHIFT) | (_type << DATA_CENTER_ID_L_SHIFT) | (_worker << WORKER_ID_L_SHIFT) | _seq;
 
 	return id;
 }
 
-long long UuidGenerator::WaitToNextMillis(const long long last_time) {
-	long long  now = Now::MilliSecond();
+ull UuidGenerator::WaitToNextMillis(const ull last_time) {
+	ull  now = Now::MilliSecond();
 	while (now <= last_time) now = Now::MilliSecond();
 	return now;
 }

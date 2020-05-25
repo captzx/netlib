@@ -44,7 +44,6 @@ public:
 	void OnPassiveHeartBeat(const TcpConnectionPtr&, const std::shared_ptr<PassiveHeartBeat>&);
 
 public:
-	bool SendStateToActiveConnection();
 	void CheckHeartBeat();
 
 public:
@@ -64,6 +63,8 @@ protected:
 	ProtobufCodec _codec;
 
 	unsigned int _heartbeatPeriod;
+
+	std::map<ServerType, TcpConnectionWeakPtr> _connections; // type -> connection
 };
 
 } // namespace x

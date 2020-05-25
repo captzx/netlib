@@ -11,9 +11,6 @@ SupervisorServer::SupervisorServer() {
 }
 
 void SupervisorServer::InitModule() {
-	ProtobufDispatcher& dispatcher = SupervisorServer::GetInstance().GetDispatcher();
-	dispatcher.RegisterMessageCallback<PassiveHeartBeat>(std::bind(&SupervisorServer::OnPassiveHeartBeat, this, std::placeholders::_1, std::placeholders::_2));
-	
 	std::shared_ptr<deadline_timer> pTimer = std::make_shared<deadline_timer>(_pTcpService->GetIOContext());
 	pTimer->expires_from_now(boost::posix_time::seconds(_heartbeatPeriod));
 	AsyncHeartBeatInLoop(pTimer);

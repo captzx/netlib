@@ -2,6 +2,7 @@
 
 #include "LoginUser.h"
 #include "LoginServer.h"
+#include "ZoneServerManager.h"
 
 using namespace mysqlx;
 using namespace x::login;
@@ -71,30 +72,38 @@ void LoginUserManager::OnRequestLogin(const TcpConnectionPtr& pConnection, const
 
 	std::ostringstream oss;
 
-	oss << "SELECT user.`pwd` FROM x_login.user WHERE user.`act` = '" << account << "';";
+	oss << "SELECT user.`id`, user.`pwd` FROM x_login.user WHERE user.`act` = '" << account << "';";
+
+	auto pSend = std::make_shared<LoginResult>();
 
 	DBServicePtr& pDBService = LoginServer::GetInstance().GetDBService();
 	SqlResult result = pDBService->GetDBConnectionByType((unsigned int)DBType::x_login)->ExecuteSql(oss.str());
-	if (result.count() == 0) SendLoginResult(pConnection, 1);
+	if (result.count() == 0) pSend->set_result(1);
 	else {
 		assert(result.count() == 1);
 		Row row = result.fetchOne();
 		assert(!row.isNull());
-		std::string existPassword = static_cast<std::string>(row.get(0));
-		if (inputPassword == existPassword) SendLoginResult(pConnection, 0);
-		else SendLoginResult(pConnection, 2);
+		ull userid = static_cast<uint64_t>(row.get(0));
+		std::string existPassword = static_cast<std::string>(row.get(1));
+		if (inputPassword == existPassword) {
+			std::shared_ptr<LoginUser> pUser = std::make_shared<LoginUser>();
+			pUser->SetID(userid);
+			pUser->SetState(LoginState::ONLINE);
+			pUser->SetLastAccessTime(Now::Second());
+			pUser->SetConnection(pConnection);
+			_userManager[userid] = pUser;
+
+			pSend->set_result(0);
+			pSend->set_act_id(userid);
+
+			ZoneServerManager::GetInstance().SendAllZoneList(pConnection);
+		}
+		else {
+			pSend->set_result(2);
+		}
 	}
-}
 
-bool LoginUserManager::SendLoginResult(const TcpConnectionPtr& pConnection, int result) {
-	auto pMsg = std::make_shared<LoginResult>();
-	if (pMsg) {
-		pMsg->set_result(result);
-
-		pConnection->AsyncSend(pMsg);
-	}
-
-	return true;
+	pConnection->AsyncSend(pSend);
 }
 
 bool LoginUserManager::VerifyAccount(const std::string& account) {

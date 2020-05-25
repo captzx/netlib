@@ -37,7 +37,7 @@ private:
 	std::string _fileName;
 };
 
-enum class ServerType {
+enum class ServerType : unsigned int{
 	UNDEFINED = 0,
 	SUPERVISOR = 1,
 	GATEWAY = 2,

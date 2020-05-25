@@ -1,13 +1,10 @@
-set(TARGETNAME LoginServer)
+set(TARGETNAME CenterServer)
 
 include_directories(../server_common)
 
 set(SRCS
 	../server_common/Server.cpp
-	LoginServer.cpp
-	LoginUser.cpp
-	LoginUserManager.cpp
-	ZoneServerManager.cpp
+	CenterServer.cpp
 	main.cpp)
 
 add_executable(${TARGETNAME} ${SRCS})

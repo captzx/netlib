@@ -24,14 +24,12 @@ public:
 	void RegisterMessageCallback();
 
 public:
-	void OnRequestRsaPublicKey(const TcpConnectionPtr& pConnection, const std::shared_ptr<RequestRsaPublicKey>&);
+	void OnRequestRsaPublicKey(const TcpConnectionPtr&, const std::shared_ptr<RequestRsaPublicKey>&);
 
 	void OnRequestRegister(const TcpConnectionPtr&, const std::shared_ptr<RequestRegister>&);
-	bool SendRegisterResult(const TcpConnectionPtr& pConnection, int result);
+	bool SendRegisterResult(const TcpConnectionPtr&, int result);
 
 	void OnRequestLogin(const TcpConnectionPtr&, const std::shared_ptr<RequestLogin>&);
-	bool SendLoginResult(const TcpConnectionPtr& pConnection, int result);
-
 public:
 	bool VerifyAccount(const std::string& account);
 	bool VerifyPassword(const std::string& account, const std::string& password);
@@ -42,7 +40,7 @@ private:
 	std::string _private_key;
 	std::string _public_key;
 	UuidGenerator _uuidGenerator;
-	std::map<long long, std::shared_ptr<LoginUser>> _userManager;
+	std::map<ull, std::shared_ptr<LoginUser>> _userManager;
 };
 
 }

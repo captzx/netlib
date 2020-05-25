@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Type.h"
+
 namespace x {
 
 namespace tool {
@@ -7,7 +9,7 @@ namespace tool {
 class Now {
 public:
 	static unsigned int Second();
-	static long long MilliSecond();
+	static ull MilliSecond();
 };
 
 }

@@ -6,22 +6,22 @@
 #include <xprotos/Login.pb.h>
 
 namespace x {
-namespace gateway {
+namespace data {
 
-	/// class GatewayServer
-	class GatewayServer : public Server, public Singleton<GatewayServer> {
+	/// class DataServer
+	class DataServer : public Server, public Singleton<DataServer> {
 	public:
-		GatewayServer();
-		virtual ~GatewayServer() { }
+		DataServer();
+		virtual ~DataServer() { }
 
 	public:
 		virtual void InitModule() override;
-		virtual ServerType GetServerType() override { return ServerType::GATEWAY; }
+		virtual ServerType GetServerType() override { return ServerType::DATA; }
 
 	public:
 		void OnRequestPlayerLoginData(const TcpConnectionPtr&, const std::shared_ptr<RequestPlayerLoginData>&);
 	};
 
-} // namespace gateway
+} // namespace data
 } // namespace x
 

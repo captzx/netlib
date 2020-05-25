@@ -21,9 +21,18 @@ public:
 		_dispatcher.RegisterMessageCallback<ResponseRsaPublicKey>(std::bind(&TestClient::OnResponseRsaPublicKey, this, std::placeholders::_1, std::placeholders::_2));
 		_dispatcher.RegisterMessageCallback<RegisterResult>(std::bind(&TestClient::OnRegisterResult, this, std::placeholders::_1, std::placeholders::_2));
 		_dispatcher.RegisterMessageCallback<LoginResult>(std::bind(&TestClient::OnLoginResult, this, std::placeholders::_1, std::placeholders::_2));
-
+		_dispatcher.RegisterMessageCallback<ReturnZoneList>(std::bind(&TestClient::OnReturnZoneList, this, std::placeholders::_1, std::placeholders::_2));
+		
 		Init();
 	}
+
+	struct ZoneServer {
+		int id = 0;
+		std::string name;
+		std::string ip;
+		unsigned int port = 0;
+		unsigned int state = 0;
+	};
 
 public:
 	void Init() {
@@ -100,6 +109,18 @@ public:
 					log(normal, "TestClient") << "request login!";
 				}
 				break;
+				case '4':
+				{
+					auto pMsg = std::make_shared<SelectZoneServer>();
+					if (pMsg) {
+						pMsg->set_act_id(_act_id);
+						pMsg->set_zone_id(1);
+
+						_pConnection->AsyncSend(pMsg);
+					}
+
+					log(normal, "TestClient") << "select zone server 1!";
+				}
 				default:
 					break;
 				}
@@ -161,6 +182,7 @@ public:
 		{
 		case 0:
 			log(warning, "TestClient") << "todo: login success!";
+			_act_id = pMessage->act_id();
 			break;
 		case 1:
 			log(warning, "TestClient") << "todo: not register!";
@@ -172,7 +194,20 @@ public:
 			break;
 		}
 	}
+	void OnReturnZoneList(const TcpConnectionPtr& pConnection, const std::shared_ptr<ReturnZoneList>& pMsg) {
+		for (int i = 0; i < pMsg->zone_servers_size(); ++i) {
+			auto zone = pMsg->zone_servers(i);
 
+			unsigned int zoneid = zone.id();
+
+			_zoneList[zoneid].id = zone.id();
+			_zoneList[zoneid].name = zone.name();
+			_zoneList[zoneid].ip = zone.ip();
+			_zoneList[zoneid].port = zone.port();
+
+			log(debug, "TestClient") << "recv zone server: " << zone.id() << " " << zone.name() << " " << zone.ip() << " " << zone.port();
+		}
+	}
 private:
 	TcpServicePtr _pTcpService;
 	ProtobufDispatcher _dispatcher;
@@ -181,6 +216,8 @@ private:
 	TcpConnectionPtr _pConnection;
 
 	std::string _key;
+	ull _act_id;
+	std::map<unsigned int, ZoneServer> _zoneList;
 };
 
 int main(int argc, char* argv[])

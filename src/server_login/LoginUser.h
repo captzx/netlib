@@ -1,5 +1,12 @@
 #pragma once
 
+
+#include "UseTools.h"
+#include "UseNet.h"
+
+using namespace x::tool;
+using namespace x::net;
+
 namespace x {
 
 namespace login {
@@ -15,13 +22,18 @@ public:
 
 public:
 	long long GetID() { return _id; }
-	void SetID(long long id) { _id = id; }
+	void SetID(ull id) { _id = id; }
 	void SetState(LoginState state) { _state = state; }
 	void SetLastAccessTime(unsigned int timestamp) { _lastAccessTime = timestamp; }
+
+	void SetConnection(const TcpConnectionPtr& pConnection) { _wpConnection = pConnection; }
+	TcpConnectionWeakPtr& GetConnection() { return _wpConnection; }
 private:
-	long long _id;
+	ull _id;
 	LoginState _state;
 	unsigned int _lastAccessTime;
+
+	TcpConnectionWeakPtr _wpConnection;
 };
 
 }

@@ -24,4 +24,29 @@ message RequestLogin {
 
 message LoginResult {
   uint32 result = 1;
+  fixed64 act_id = 2;
+}
+
+message ZoneServer {
+  uint32 id = 1;
+  string name = 2;
+  string ip = 3;
+  uint32 port = 4;
+}
+message ReturnZoneList {
+  repeated ZoneServer zone_servers = 1;
+}
+
+message SelectZoneServer{
+  fixed64 act_id = 1;
+  uint32 zone_id = 2;
+}
+
+message RequestPlayerLoginData {
+  fixed64 act_id = 1;
+}
+
+message ResponsePlayerLoginData{
+  fixed64 act_id = 1;
+  uint32 data = 2;
 }

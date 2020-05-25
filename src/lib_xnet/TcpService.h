@@ -18,6 +18,7 @@ namespace net {
 
 class TcpConnection;
 using TcpConnectionPtr = std::shared_ptr<TcpConnection>;
+using TcpConnectionWeakPtr = std::weak_ptr<TcpConnection>;
 using MessageCallback = std::function<void(const TcpConnectionPtr&, Buffer&)>;
 using ConnectionCallback = std::function<void(const TcpConnectionPtr&)>;
 using CloseCallback = std::function<void(const TcpConnectionPtr&)>;
@@ -59,7 +60,6 @@ public:
 	unsigned int GetStartTime() { return _startTime; }
 	void SetID(int id) { _id = id; }
 	int GetID() { return _id; }
-	void SetType(unsigned int type) { _type = type; }
 
 public:
 	void SetMessageCallback(MessageCallback callback) { _messageCallback = callback; }
@@ -69,7 +69,6 @@ private:
 	tcp::socket _sock;
 
 	int _id;
-	unsigned int _type; 
 	unsigned int _pid;
 	unsigned int _startTime;
 	State _state;

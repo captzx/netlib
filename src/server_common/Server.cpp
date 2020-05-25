@@ -57,10 +57,7 @@ void Server::InitTcpService() {
 	_pTcpService->SetMessageCallback(std::bind(&ProtobufCodec::RecvMessage, &_codec, std::placeholders::_1, std::placeholders::_2));
 	_pTcpService->SetConnectionCallback(std::bind(&Server::OnConnection, this, std::placeholders::_1));
 
-	for (auto svr : _pSvrCfg->ConnectSvrCfgs) {
-		auto pConnection = _pTcpService->AsyncConnect(svr.IP, svr.Port);
-		pConnection->SetType(svr.Type);
-	}
+	for (auto svr : _pSvrCfg->ConnectSvrCfgs) _connections[(ServerType)svr.Type] = _pTcpService->AsyncConnect(svr.IP, svr.Port);
 }
 void Server::DefaultMessageCallback(const TcpConnectionPtr&, const MessagePtr&) {
 	log(debug, _pSvrCfg->Name) << "Server default message call back.";
@@ -68,29 +65,6 @@ void Server::DefaultMessageCallback(const TcpConnectionPtr&, const MessagePtr&) 
 
 void Server::OnConnection(const TcpConnectionPtr&) {
 	log(debug, _pSvrCfg->Name) << "on Connection.";
-
-	SendStateToActiveConnection();
-}
-bool Server::SendStateToActiveConnection() {
-	TcpConnectionManager& activeConnections = _pTcpService->GetActiveConnectionMgr();
-
-	for (auto it : activeConnections) {
-		const TcpConnectionPtr& pConnection = it.second;
-
-		auto pMsg = std::make_shared<PassiveHeartBeat>();
-		if (pMsg) {
-			pMsg->set_last_hb_time(pConnection->GetLastHeartBeatTime());
-			pMsg->set_cnt_start_time(pConnection->GetStartTime());
-			pMsg->set_address(pConnection->GetLocalEndpoint());
-			pMsg->set_pid(pConnection->GetPid());
-			pMsg->set_atv_count(_pTcpService->GetActiveConnectCount());
-			pMsg->set_psv_count(_pTcpService->GetPassiveConnectCount());
-
-			pConnection->AsyncSend(pMsg);
-		}
-	}
-
-	return true;
 }
 
 void Server::CheckHeartBeat() {
