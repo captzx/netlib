@@ -10,6 +10,7 @@ void ZoneServerManager::RegisterMessageCallback() {
 	ProtobufDispatcher& dispatcher = LoginServer::GetInstance().GetDispatcher();
 
 	dispatcher.RegisterMessageCallback<SelectZoneServer>(std::bind(&ZoneServerManager::OnSelectZoneServer, this, std::placeholders::_1, std::placeholders::_2));
+	dispatcher.RegisterMessageCallback<ResponsePlayerLoginData>(std::bind(&ZoneServerManager::OnResponsePlayerLoginData, this, std::placeholders::_1, std::placeholders::_2));
 }
 
 bool ZoneServerManager::InitServerList() {
@@ -65,12 +66,16 @@ bool ZoneServerManager::SendAllZoneList(const TcpConnectionPtr& pConnection) {
 	
 }
 
+void ZoneServerManager::OnResponsePlayerLoginData(const TcpConnectionPtr& pConnection, const std::shared_ptr<ResponsePlayerLoginData>& pRecv) {
+	log(warning, "ZoneServerManager") << "OnResponsePlayerLoginData" << pRecv->data();
+}
 void ZoneServerManager::OnSelectZoneServer(const TcpConnectionPtr& pConnection, const std::shared_ptr<SelectZoneServer>& pRecv) {
 	auto it = _zoneList.find(pRecv->zone_id());
 	if (it != _zoneList.end() && !it->second.wpConnection.expired()) {
 		TcpConnectionPtr pToGateWay = it->second.wpConnection.lock();
 		auto pSend = std::make_shared<RequestPlayerLoginData>();
 		if (pSend) {
+			pSend->set_svr_id(1); // 1
 			pSend->set_act_id(pRecv->act_id());
 
 			pToGateWay->AsyncSend(pSend);

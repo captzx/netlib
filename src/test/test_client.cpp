@@ -40,7 +40,7 @@ public:
 		global_logger_set_filter(severity >= trivial);
 
 		_pTcpService->SetMessageCallback(std::bind(&ProtobufCodec::RecvMessage, &_codec, std::placeholders::_1, std::placeholders::_2));
-		_pTcpService->SetConnectionCallback(std::bind(&TestClient::OnConnection, this, std::placeholders::_1));
+		_pTcpService->SetAtvConnCallback(std::bind(&TestClient::OnAtvConnection, this, std::placeholders::_1));
 	}
 
 	void Start() { 
@@ -136,7 +136,7 @@ public:
 	void DefaultMessageCallback(const TcpConnectionPtr&, const MessagePtr&) {
 		log(debug, "TestClient") << "client default message call back.";
 	}
-	void OnConnection(const TcpConnectionPtr& pConnection) {
+	void OnAtvConnection(const TcpConnectionPtr& pConnection) {
 		assert(_pConnection == pConnection);
 
 		log(debug, "TestClient") << "client onConnection, start op.";

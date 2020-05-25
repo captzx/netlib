@@ -1,3 +1,3 @@
 #!/bin/bash
 
-HOME=.. mysql < create_schema_and_tables.sql
+HOME=~ mysql < create_schema_and_tables.sql

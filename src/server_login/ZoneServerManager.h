@@ -32,6 +32,7 @@ public:
 public:
 	bool SendAllZoneList(const TcpConnectionPtr& pConnection);
 	void OnSelectZoneServer(const TcpConnectionPtr&, const std::shared_ptr<SelectZoneServer>&);
+	void OnResponsePlayerLoginData(const TcpConnectionPtr& pConnection, const std::shared_ptr<ResponsePlayerLoginData>& pRecv);
 
 private:
 	std::map<int, ZoneServer> _zoneList;

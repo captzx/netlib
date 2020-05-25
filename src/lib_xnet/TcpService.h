@@ -101,8 +101,11 @@ public:
 	void SetMessageCallback(MessageCallback callback) {
 		_messageCallback = callback;
 	}
-	void SetConnectionCallback(ConnectionCallback callback) {
-		_connectionCallback = callback;
+	void SetAtvConnCallback(ConnectionCallback callback) {
+		_atvConnCallback = callback;
+	}
+	void SetPsvConnCallback(ConnectionCallback callback) {
+		_psvConnCallback = callback;
 	}
 
 	void Start();
@@ -121,13 +124,13 @@ private:
 	std::string _name;
 	io_context _io_context;
 	tcp::acceptor _acceptor;
-	boost::asio::deadline_timer _heartTimer;
 
 	TcpConnectionManager _activeConnections;
 	TcpConnectionManager _passiveConnections;
 
 	MessageCallback _messageCallback;
-	ConnectionCallback _connectionCallback;
+	ConnectionCallback _atvConnCallback;
+	ConnectionCallback _psvConnCallback;
 
 	std::thread _io_thread;
 };

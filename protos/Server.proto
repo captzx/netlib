@@ -12,3 +12,8 @@ message PassiveHeartBeat {
   uint32 atv_count = 5;
   uint32 psv_count = 6;
 }
+
+message ActiveConnection {
+  uint32 type = 1;
+  uint32 id = 2;
+}

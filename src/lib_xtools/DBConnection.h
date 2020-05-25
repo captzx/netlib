@@ -16,6 +16,7 @@ namespace tool {
 
 enum class DBType : unsigned int {
 	x_login = 1,
+	x_data = 2,
 };
 class DBConnection :public NoCopyable {
 public:

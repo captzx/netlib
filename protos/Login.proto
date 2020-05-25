@@ -43,10 +43,12 @@ message SelectZoneServer{
 }
 
 message RequestPlayerLoginData {
-  fixed64 act_id = 1;
+  uint32 svr_id = 1;
+  fixed64 act_id = 2;
 }
 
 message ResponsePlayerLoginData{
-  fixed64 act_id = 1;
-  uint32 data = 2;
+  uint32 svr_id = 1;
+  fixed64 act_id = 2;
+  uint32 data = 3;
 }

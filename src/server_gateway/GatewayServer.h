@@ -20,6 +20,7 @@ namespace gateway {
 
 	public:
 		void OnRequestPlayerLoginData(const TcpConnectionPtr&, const std::shared_ptr<RequestPlayerLoginData>&);
+		void OnResponsePlayerLoginData(const TcpConnectionPtr&, const std::shared_ptr<ResponsePlayerLoginData>&);
 	};
 
 } // namespace gateway

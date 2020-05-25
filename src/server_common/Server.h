@@ -18,7 +18,7 @@ namespace x {
 		virtual ~Server() {}
 
 	public:
-		virtual void Start() final;
+		virtual void Start(unsigned int id) final;
 
 		virtual ProtobufDispatcher& GetDispatcher() final { return _dispatcher; }
 		virtual ProtobufCodec& GetCodec() final { return _codec; }
@@ -29,20 +29,14 @@ namespace x {
 		virtual ServerType GetServerType() = 0;
 
 public:
-	void InitConfig();
-	void InitLog();
-	void InitDBService();
-	void InitTcpService();
-
-public:
 	void DefaultMessageCallback(const TcpConnectionPtr&, const MessagePtr&);
-	void SetStartCallBack();
 
 public:
-	void OnConnection(const TcpConnectionPtr&);
+	void OnAtvConnection(const TcpConnectionPtr&);
+	void OnPsvConnection(const TcpConnectionPtr&);
 	virtual void OnActiveHeartBeat(const TcpConnectionPtr&, const std::shared_ptr<ActiveHeartBeat>&);
 	void OnPassiveHeartBeat(const TcpConnectionPtr&, const std::shared_ptr<PassiveHeartBeat>&);
-
+	void OnActiveConnection(const TcpConnectionPtr& pConnection, const std::shared_ptr<ActiveConnection>& pMsg);
 public:
 	void CheckHeartBeat();
 
@@ -64,7 +58,7 @@ protected:
 
 	unsigned int _heartbeatPeriod;
 
-	std::map<ServerType, TcpConnectionWeakPtr> _connections; // type -> connection
+	std::map<std::pair<unsigned int, unsigned int>, TcpConnectionWeakPtr> _connections; // { type, id } -> connection
 };
 
 } // namespace x

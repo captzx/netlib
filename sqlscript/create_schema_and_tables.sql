@@ -15,3 +15,12 @@ create table if not exists x_login.serverlist (
 	`state` int(4) NOT NULL DEFAULT '0',
     PRIMARY KEY (`id`)
 );
+
+create database if not exists x_data;
+
+create table if not exists x_data.role (
+    `actid` bigint(64) NOT NULL,
+    `roleid` bigint(64) NOT NULL,
+    `name` varchar(255) NOT NULL,
+    PRIMARY KEY (`actid`,`roleid`)
+);

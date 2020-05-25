@@ -106,9 +106,9 @@ void TcpConnection::Disconnect() {
 TcpService::TcpService(std::string name) :
 	_name(name),
 	_acceptor(_io_context),
-	_heartTimer(_io_context),
 	_messageCallback(std::bind(&DefaultMessageCallback, std::placeholders::_1, std::placeholders::_2)),
-	_connectionCallback(std::bind(&DefaultConnectionCallback, std::placeholders::_1)){
+	_atvConnCallback(std::bind(&DefaultConnectionCallback, std::placeholders::_1)),
+	_psvConnCallback(std::bind(&DefaultConnectionCallback, std::placeholders::_1)) {
 
 }
 
@@ -158,7 +158,7 @@ TcpConnectionPtr TcpService::AsyncConnect(std::string ip, unsigned int port) {
 
 				_activeConnections.insert({ pConnection->GetID(), pConnection });
 
-				_connectionCallback(pConnection);
+				_atvConnCallback(pConnection);
 			}
 		);
 	}
@@ -196,7 +196,7 @@ void TcpService::AsyncListenInLoop() {
 
 		_passiveConnections.insert({ pConnection->GetID(), pConnection });
 
-		_connectionCallback(pConnection);
+		_psvConnCallback(pConnection);
 
 		AsyncListenInLoop();
 		}

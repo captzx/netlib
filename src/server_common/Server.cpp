@@ -9,22 +9,38 @@ Server::Server() :
 	_heartbeatPeriod = 3;
 	_dispatcher.RegisterMessageCallback<ActiveHeartBeat>(std::bind(&Server::OnActiveHeartBeat, this, std::placeholders::_1, std::placeholders::_2));
 	_dispatcher.RegisterMessageCallback<PassiveHeartBeat>(std::bind(&Server::OnPassiveHeartBeat, this, std::placeholders::_1, std::placeholders::_2));
-	
+	_dispatcher.RegisterMessageCallback<ActiveConnection>(std::bind(&Server::OnActiveConnection, this, std::placeholders::_1, std::placeholders::_2));
 }
 
-void Server::Start() {
-	InitConfig();
+void Server::Start(unsigned int id) {
+	_pSvrCfg = GlobalConfig::GetInstance().GetServerCfgByType({ static_cast<unsigned int>(GetServerType()), id });
+	if (!_pSvrCfg) {
+		std::cout << "start Server failure, error code: config missing.";
+		return;
+	}
 
-	InitLog();
+	global_logger_init(_pSvrCfg->LogFile);
+	global_logger_set_filter(severity >= (severity_level)_pSvrCfg->LogLevel);
 
-	InitDBService();
+	_pDBService = std::make_shared<DBService>();
+	for (auto db : _pSvrCfg->ConnectDBCfgs) {
+		_pDBService->Connect(db.Type, db.Url);
+	}
 
-	InitTcpService();
+	_pTcpService = std::make_shared<TcpService>(_pSvrCfg->Name);
+	_pTcpService->SetMessageCallback(std::bind(&ProtobufCodec::RecvMessage, &_codec, std::placeholders::_1, std::placeholders::_2));
+	_pTcpService->SetAtvConnCallback(std::bind(&Server::OnAtvConnection, this, std::placeholders::_1));
+	_pTcpService->SetPsvConnCallback(std::bind(&Server::OnPsvConnection, this, std::placeholders::_1));
+	for (auto svr : _pSvrCfg->ConnectSvrCfgs) {
+		auto pSvrCfg = GlobalConfig::GetInstance().GetServerCfgByType({ svr.Type, svr.ID });
+		if (pSvrCfg) _connections[{svr.Type, svr.ID}] = _pTcpService->AsyncConnect(pSvrCfg->IP, pSvrCfg->Port);
+	}
 
-	InitModule();
+	InitModule(); // another module
 
 	_pTcpService->AsyncListen(_pSvrCfg->Port);
 	_pTcpService->Start();
+
 	log(debug, _pSvrCfg->Name) << "Server start.";
 
 	_startTime = Now::Second();
@@ -32,41 +48,22 @@ void Server::Start() {
 	while (1); // fix
 }
 
-void Server::InitConfig() {
-	_pSvrCfg = GlobalConfig::GetInstance().GetServerCfgByType(GetServerType());
-	if (!_pSvrCfg) {
-		std::cout << "start Server failure, error code: config missing.";
-		return;
-	}
-}
-void Server::InitLog() {
-	global_logger_init(_pSvrCfg->LogFile);
-	global_logger_set_filter(severity >= (severity_level)_pSvrCfg->LogLevel);
-}
-
-void Server::InitDBService() {
-	_pDBService = std::make_shared<DBService>();
-
-	for (auto db : _pSvrCfg->ConnectDBCfgs) {
-		_pDBService->Connect(db.Type, db.Url);
-	}
-}
-void Server::InitTcpService() {
-	_pTcpService = std::make_shared<TcpService>(_pSvrCfg->Name);
-
-	_pTcpService->SetMessageCallback(std::bind(&ProtobufCodec::RecvMessage, &_codec, std::placeholders::_1, std::placeholders::_2));
-	_pTcpService->SetConnectionCallback(std::bind(&Server::OnConnection, this, std::placeholders::_1));
-
-	for (auto svr : _pSvrCfg->ConnectSvrCfgs) _connections[(ServerType)svr.Type] = _pTcpService->AsyncConnect(svr.IP, svr.Port);
-}
 void Server::DefaultMessageCallback(const TcpConnectionPtr&, const MessagePtr&) {
 	log(debug, _pSvrCfg->Name) << "Server default message call back.";
 }
 
-void Server::OnConnection(const TcpConnectionPtr&) {
+void Server::OnAtvConnection(const TcpConnectionPtr& pConnection) {
+	auto pMsg = std::make_shared<ActiveConnection>();
+	if (pMsg) {
+		pMsg->set_type(_pSvrCfg->Type);
+		pMsg->set_id(_pSvrCfg->ID);
+
+		pConnection->AsyncSend(pMsg);
+	}
+}
+void Server::OnPsvConnection(const TcpConnectionPtr&) {
 	log(debug, _pSvrCfg->Name) << "on Connection.";
 }
-
 void Server::CheckHeartBeat() {
 	unsigned int now = Now::Second();
 	TcpConnectionManager& passiveConnections = _pTcpService->GetPassiveConnectionMgr();
@@ -118,4 +115,10 @@ void Server::OnActiveHeartBeat(const TcpConnectionPtr& pConnection, const std::s
 			pConnection->AsyncSend(pMsg);
 		}
 	}
+}
+
+void Server::OnActiveConnection(const TcpConnectionPtr& pConnection, const std::shared_ptr<ActiveConnection>& pMsg) {
+	_connections[{pMsg->type(), pMsg->id()}] = pConnection;
+
+	log(debug, _pSvrCfg->Name) << "OnActiveConnection {pMsg, svr.ID}: " << pMsg->type() << " " << pMsg->id();
 }

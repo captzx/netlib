@@ -49,10 +49,12 @@ enum class ServerType : unsigned int{
 
 struct ServerCfg {
 	unsigned int Type = 0;
-	unsigned int Port = 0;
-	unsigned int LogLevel = 0;
 	std::string Name;
+	unsigned int ID = 0;
+	std::string IP;
+	unsigned int Port = 0;
 	std::string LogFile;
+	unsigned int LogLevel = 0;
 
 	struct ConnectDB {
 		unsigned int Type;
@@ -62,8 +64,7 @@ struct ServerCfg {
 
 	struct ConnectServer {
 		unsigned int Type = 0;
-		unsigned int Port = 0;
-		std::string IP;
+		unsigned int ID = 0;
 	};
 	std::vector<ConnectServer> ConnectSvrCfgs;
 };
@@ -87,7 +88,9 @@ public:
 			for (; pServer ; pServer = pServer->NextSiblingElement("_A_Server")) {
 				ServerCfg serverCfg;
 				serverCfg.Type = pServer->UnsignedAttribute("Type");
+				serverCfg.ID = pServer->UnsignedAttribute("ID");
 				serverCfg.Name = std::string(pServer->Attribute("Name"));
+				serverCfg.IP = std::string(pServer->Attribute("IP"));
 				serverCfg.Port = pServer->UnsignedAttribute("Port");
 				serverCfg.LogFile = std::string(pServer->Attribute("LogFile"));
 				serverCfg.LogLevel = pServer->UnsignedAttribute("LogLevel");
@@ -111,14 +114,13 @@ public:
 					for (; pPerSvr; pPerSvr = pPerSvr->NextSiblingElement("_A_Connect")) {
 						ServerCfg::ConnectServer cServer;
 						cServer.Type = pPerSvr->UnsignedAttribute("Type");
-						cServer.IP = std::string(pPerSvr->Attribute("IP"));
-						cServer.Port = pPerSvr->UnsignedAttribute("Port");
+						cServer.ID = pPerSvr->UnsignedAttribute("ID");
 
 						serverCfg.ConnectSvrCfgs.push_back(cServer);
 					}
 				}
 
-				_serverCfgs[serverCfg.Type] = serverCfg;
+				_serverCfgs[{serverCfg.Type, serverCfg.ID}] = serverCfg;
 			}
 		}
 
@@ -126,8 +128,8 @@ public:
 	}
 
 public:
-	ServerCfg* GetServerCfgByType(ServerType type) {
-		auto it = _serverCfgs.find((int)type);
+	ServerCfg* GetServerCfgByType(const std::pair<unsigned int, unsigned int>& pair) {
+		auto it = _serverCfgs.find(pair);
 		if (it != _serverCfgs.end()) {
 			return &(it->second);
 		}
@@ -136,7 +138,8 @@ public:
 	}
 
 private:
-	std::map<int, ServerCfg> _serverCfgs;
+
+	std::map<std::pair<unsigned int, unsigned int>, ServerCfg> _serverCfgs; // {type, id} => ServerCfg
 };
 
 } // namespace tool
