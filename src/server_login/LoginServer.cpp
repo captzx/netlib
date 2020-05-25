@@ -5,7 +5,6 @@
 using namespace x::login;
 
 /// LoginServer
-const ServerType LoginServer::TYPE;
 LoginServer::LoginServer(){
 
 }

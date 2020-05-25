@@ -5,27 +5,28 @@
 
 #include <xprotos/Server.pb.h>
 
+using namespace x;
 using namespace x::tool;
 using namespace x::net;
 
 namespace x {
 
 /// class SupervisorServer
-class Server {
-public:
-	Server();
-	virtual ~Server() {}
+	class Server {
+	public:
+		Server();
+		virtual ~Server() {}
 
-public:
-	virtual void Start() final;
+	public:
+		virtual void Start() final;
 
-	virtual ProtobufDispatcher& GetDispatcher() final { return _dispatcher; }
-	virtual ProtobufCodec& GetCodec() final { return _codec; }
-	virtual TcpServicePtr& GetTcpService() final { return _pTcpService; }
-	virtual DBServicePtr& GetDBService() final { return _pDBService; }
+		virtual ProtobufDispatcher& GetDispatcher() final { return _dispatcher; }
+		virtual ProtobufCodec& GetCodec() final { return _codec; }
+		virtual TcpServicePtr& GetTcpService() final { return _pTcpService; }
+		virtual DBServicePtr& GetDBService() final { return _pDBService; }
 
-	virtual void InitModule() = 0;
-	virtual ServerType GetServerType() = 0;
+		virtual void InitModule() = 0;
+		virtual ServerType GetServerType() = 0;
 
 public:
 	void InitConfig();
@@ -39,7 +40,7 @@ public:
 
 public:
 	void OnConnection(const TcpConnectionPtr&);
-	void OnActiveHeartBeat(const TcpConnectionPtr&, const std::shared_ptr<ActiveHeartBeat>&);
+	virtual void OnActiveHeartBeat(const TcpConnectionPtr&, const std::shared_ptr<ActiveHeartBeat>&);
 	void OnPassiveHeartBeat(const TcpConnectionPtr&, const std::shared_ptr<PassiveHeartBeat>&);
 
 public:
@@ -48,6 +49,9 @@ public:
 
 public:
 	unsigned int GetStartTime() { return _startTime; }
+
+public:
+	static ServerType TYPE;
 
 protected:
 	unsigned int _startTime;

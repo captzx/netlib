@@ -116,15 +116,13 @@ void Server::CheckHeartBeat() {
 			}
 		}
 	}
-
-	SendStateToActiveConnection();
 }
 
 
 void Server::OnPassiveHeartBeat(const TcpConnectionPtr& pConnection, const std::shared_ptr<PassiveHeartBeat>& pMsg) {
 	pConnection->SetLastHeartBeatTime(pMsg->last_hb_time());
 
-	log(debug, _pSvrCfg->Name) << pMsg->address() << ":" << pMsg->cnt_start_time() << ":" << pMsg->pid()
+	log(trivial, _pSvrCfg->Name) << pMsg->address() << ":" << pMsg->cnt_start_time() << ":" << pMsg->pid()
 		<< " active count: " << pMsg->atv_count() << " passive count: " << pMsg->psv_count();
 }
 
@@ -132,4 +130,18 @@ void Server::OnActiveHeartBeat(const TcpConnectionPtr& pConnection, const std::s
 	pConnection->SetLastHeartBeatTime(pMsg->last_hb_time());
 
 	CheckHeartBeat();
+
+	if (pConnection->IsConnectioned()) {
+		auto pMsg = std::make_shared<PassiveHeartBeat>();
+		if (pMsg) {
+			pMsg->set_last_hb_time(pConnection->GetLastHeartBeatTime());
+			pMsg->set_cnt_start_time(pConnection->GetStartTime());
+			pMsg->set_address(pConnection->GetLocalEndpoint());
+			pMsg->set_pid(pConnection->GetPid());
+			pMsg->set_atv_count(_pTcpService->GetActiveConnectCount());
+			pMsg->set_psv_count(_pTcpService->GetPassiveConnectCount());
+
+			pConnection->AsyncSend(pMsg);
+		}
+	}
 }

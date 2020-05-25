@@ -6,8 +6,6 @@ using namespace boost::asio;
 using namespace x::supervisor;
 
 /// SupervisorServer
-const ServerType SupervisorServer::TYPE;
-
 SupervisorServer::SupervisorServer() {
 
 }

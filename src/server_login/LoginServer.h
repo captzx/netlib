@@ -5,9 +5,6 @@
 #include <xprotos/Server.pb.h>
 #include <xprotos/Login.pb.h>
 
-using namespace x::tool;
-using namespace x::net; 
-
 namespace x {
 namespace login {
 
@@ -19,10 +16,7 @@ public:
 
 public:
 	virtual void InitModule() override;
-	virtual ServerType GetServerType() override { return TYPE; }
-
-public:
-	const static ServerType TYPE = ServerType::LOGIN;
+	virtual ServerType GetServerType() override { return ServerType::LOGIN; }
 
 };
 

@@ -4,9 +4,6 @@
 
 #include <xprotos/Server.pb.h>
 
-using namespace x::tool;
-using namespace x::net; 
-
 namespace x {
 namespace gateway {
 
@@ -18,10 +15,7 @@ namespace gateway {
 
 	public:
 		virtual void InitModule() override;
-		virtual ServerType GetServerType() override { return TYPE; }
-
-	public:
-		const static ServerType TYPE = ServerType::GATEWAY;
+		virtual ServerType GetServerType() override { return ServerType::GATEWAY; }
 	};
 
 } // namespace gateway

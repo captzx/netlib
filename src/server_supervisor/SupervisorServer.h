@@ -15,12 +15,10 @@ public:
 
 public:
 	virtual void InitModule() override;
-	virtual ServerType GetServerType() override { return TYPE; }
+	virtual ServerType GetServerType() override { return ServerType::SUPERVISOR; }
 
 public:
 	void AsyncHeartBeatInLoop(std::shared_ptr<boost::asio::deadline_timer> pTimer);
-public: 
-	const static ServerType TYPE = ServerType::SUPERVISOR;
 };
 
 } // namespace supervisor

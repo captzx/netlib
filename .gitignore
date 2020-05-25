@@ -19,6 +19,7 @@ tags
 upcs.sh
 bl
 .mysql_history
+config.xml
 
 #
 # ---------------------------- c++ ignore ---------------------------- 

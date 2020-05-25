@@ -17,7 +17,7 @@ public:
 
 		_pTcpService = std::make_shared<TcpService>(name);
 
-		_dispatcher.RegisterMessageCallback<HeartBeat>(std::bind(&TestClient::OnHeartBeat, this, std::placeholders::_1, std::placeholders::_2));
+		_dispatcher.RegisterMessageCallback<ActiveHeartBeat>(std::bind(&TestClient::OnActiveHeartBeat, this, std::placeholders::_1, std::placeholders::_2));
 		_dispatcher.RegisterMessageCallback<ResponseRsaPublicKey>(std::bind(&TestClient::OnResponseRsaPublicKey, this, std::placeholders::_1, std::placeholders::_2));
 		_dispatcher.RegisterMessageCallback<RegisterResult>(std::bind(&TestClient::OnRegisterResult, this, std::placeholders::_1, std::placeholders::_2));
 		_dispatcher.RegisterMessageCallback<LoginResult>(std::bind(&TestClient::OnLoginResult, this, std::placeholders::_1, std::placeholders::_2));
@@ -93,7 +93,7 @@ public:
 					auto pMsg = std::make_shared<RequestLogin>();
 					if (pMsg) {
 						pMsg->set_account("captzx");
-						pMsg->set_password(RSAEncrypt(_key, "1234"));
+						pMsg->set_password(RSAEncrypt(_key, "123"));
 						_pConnection->AsyncSend(pMsg);
 					}
 
@@ -120,17 +120,26 @@ public:
 
 		log(debug, "TestClient") << "client onConnection, start op.";
 	}
-	/*void OnHeartBeat(const TcpConnectionPtr& pConnection, const std::shared_ptr<HeartBeat>& pMessage) {
+	void OnActiveHeartBeat(const TcpConnectionPtr& pConnection, const std::shared_ptr<ActiveHeartBeat>& pMessage) {
 		unsigned int now = Now::Second();
-		int diff = pMessage->time() - now;
+		int diff = pMessage->last_hb_time() - now;
 
 		log(trivial, "TestClient") << "recv heart beat: " << now << ", diff: " << diff;
 
 		pConnection->SetLastHeartBeatTime(now);
 
-		pMessage->set_time(now);
-		pConnection->AsyncSend(pMessage);
-	}*/
+		auto pMsg = std::make_shared<PassiveHeartBeat>();
+		if (pMsg) {
+			pMsg->set_last_hb_time(pConnection->GetLastHeartBeatTime());
+			pMsg->set_cnt_start_time(pConnection->GetStartTime());
+			pMsg->set_address(pConnection->GetLocalEndpoint());
+			pMsg->set_pid(pConnection->GetPid());
+			pMsg->set_atv_count(_pTcpService->GetActiveConnectCount());
+			pMsg->set_psv_count(_pTcpService->GetPassiveConnectCount());
+
+			pConnection->AsyncSend(pMsg);
+		}
+	}
 	void OnResponseRsaPublicKey(const TcpConnectionPtr& pConnection, const std::shared_ptr<ResponseRsaPublicKey>& pMessage) {
 		_key = pMessage->publickey();
 	}

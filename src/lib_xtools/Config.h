@@ -38,6 +38,7 @@ private:
 };
 
 enum class ServerType {
+	UNDEFINED = 0,
 	SUPERVISOR = 1,
 	GATEWAY = 2,
 	LOGIN = 3,
