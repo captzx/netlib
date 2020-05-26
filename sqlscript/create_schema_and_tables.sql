@@ -24,3 +24,9 @@ create table if not exists x_data.role (
     `name` varchar(255) NOT NULL,
     PRIMARY KEY (`actid`,`roleid`)
 );
+
+create table if not exists x_data.global (
+    `var` varchar(32) NOT NULL,
+    `value` int(64) NOT NULL DEFAULT '0',
+    PRIMARY KEY (`var`)
+);

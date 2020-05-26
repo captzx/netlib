@@ -22,6 +22,9 @@ public:
 		_dispatcher.RegisterMessageCallback<RegisterResult>(std::bind(&TestClient::OnRegisterResult, this, std::placeholders::_1, std::placeholders::_2));
 		_dispatcher.RegisterMessageCallback<LoginResult>(std::bind(&TestClient::OnLoginResult, this, std::placeholders::_1, std::placeholders::_2));
 		_dispatcher.RegisterMessageCallback<ReturnZoneList>(std::bind(&TestClient::OnReturnZoneList, this, std::placeholders::_1, std::placeholders::_2));
+		_dispatcher.RegisterMessageCallback<RoleList>(std::bind(&TestClient::OnRoleList, this, std::placeholders::_1, std::placeholders::_2));
+		_dispatcher.RegisterMessageCallback<RspCreateRole>(std::bind(&TestClient::OnRspCreateRole, this, std::placeholders::_1, std::placeholders::_2));
+		
 		
 		Init();
 	}
@@ -37,7 +40,7 @@ public:
 public:
 	void Init() {
 		global_logger_init("./log/client.log");
-		global_logger_set_filter(severity >= trivial);
+		global_logger_set_filter(severity >= debug);
 
 		_pTcpService->SetMessageCallback(std::bind(&ProtobufCodec::RecvMessage, &_codec, std::placeholders::_1, std::placeholders::_2));
 		_pTcpService->SetAtvConnCallback(std::bind(&TestClient::OnAtvConnection, this, std::placeholders::_1));
@@ -114,12 +117,35 @@ public:
 					auto pMsg = std::make_shared<SelectZoneServer>();
 					if (pMsg) {
 						pMsg->set_act_id(_act_id);
-						pMsg->set_zone_id(1);
+						pMsg->set_zone_id(1); // zone_id
 
 						_pConnection->AsyncSend(pMsg);
 					}
 
 					log(normal, "TestClient") << "select zone server 1!";
+				}
+				break;
+				case '5':
+				{
+					auto pMsg = std::make_shared<ReqCreateRole>();
+					if (pMsg) {
+						pMsg->set_act_id(_act_id);
+						pMsg->set_zone_id(1); // zone_id
+						pMsg->set_name("captzx");
+
+						_pConnection->AsyncSend(pMsg);
+					}
+				}
+				break;
+				case '6':
+				{
+					auto pMsg = std::make_shared<ReqEnterGame>();
+					if (pMsg) {
+						pMsg->set_act_id(_act_id);
+						pMsg->set_role_id(2147549187);
+
+						_pConnection->AsyncSend(pMsg);
+					}
 				}
 				default:
 					break;
@@ -208,6 +234,21 @@ public:
 			log(debug, "TestClient") << "recv zone server: " << zone.id() << " " << zone.name() << " " << zone.ip() << " " << zone.port();
 		}
 	}
+	void OnRoleList(const TcpConnectionPtr& pConnection, const std::shared_ptr<RoleList>& pMsg) {
+		log(debug, "TestClient") << "recv RoleList";
+
+		for (int i = 0; i < pMsg->roles_size(); ++i) {
+			auto role = pMsg->roles(i);
+
+			log(debug, "TestClient") << role.name() << " " << role.role_id();
+		}
+	}
+	void OnRspCreateRole(const TcpConnectionPtr& pConnection, const std::shared_ptr<RspCreateRole>& pMsg) {
+		RoleInfo role = pMsg->role();
+		log(debug, "TestClient") << "recv OnRspCreateRole, roleid = " << role.role_id() << ", name = " << role.name();
+	}
+	
+
 private:
 	TcpServicePtr _pTcpService;
 	ProtobufDispatcher _dispatcher;

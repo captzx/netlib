@@ -1,7 +1,6 @@
 #pragma once
 
-#include "Server.h"
-
+#include <xcommon/Server.h>
 #include <xprotos/Server.pb.h>
 
 namespace x {

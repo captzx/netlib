@@ -1,9 +1,10 @@
 #pragma once
 
-#include "Server.h"
+#include <xcommon/Server.h>
 
 #include <xprotos/Server.pb.h>
 #include <xprotos/Login.pb.h>
+#include <xprotos/Scene.pb.h>
 
 namespace x {
 namespace data {
@@ -19,7 +20,12 @@ namespace data {
 		virtual ServerType GetServerType() override { return ServerType::DATA; }
 
 	public:
-		void OnRequestPlayerLoginData(const TcpConnectionPtr&, const std::shared_ptr<RequestPlayerLoginData>&);
+		void OnRequestZoneRoleData(const TcpConnectionPtr&, const std::shared_ptr<RequestZoneRoleData>&);
+		void OnReqCreateRole(const TcpConnectionPtr&, const std::shared_ptr<ReqCreateRole>&);
+		void OnReqEnterGame(const TcpConnectionPtr&, const std::shared_ptr<ReqEnterGame>&);
+		
+	private:
+		unsigned int _rolecount;
 	};
 
 } // namespace data

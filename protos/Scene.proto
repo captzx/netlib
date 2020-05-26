@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message LoginIntoScene {
+  fixed64 act_id = 1;
+  fixed64 role_id = 2;
+  string name = 3; // data
+}

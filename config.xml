@@ -20,7 +20,7 @@
     </_A_Server>
     <_A_Server Type="3" ID ="1" Name="LoginServer" IP="127.0.0.1" Port="1235" LogFile="./log/loginserver.log" LogLevel="1">
       <ConnectDB>
-        <_A_Connect Type="1" DBEnum="x_login" Url="mysqlx://zx:xin@localhost" />
+        <_A_Connect Type="1" DBEnum="x_login" Url="mysqlx://zx:Luck25.zx@localhost" />
       </ConnectDB>
       <ConnectServer>
         <_A_Connect Type="1" ID ="1" />
@@ -28,7 +28,7 @@
     </_A_Server>
     <_A_Server Type="4" ID ="1" Name="DataServer" IP="127.0.0.1" Port="1237" LogFile="./log/dataserver.log" LogLevel="1">
       <ConnectDB>
-        <_A_Connect Type="2" DBEnum="x_data" Url="mysqlx://zx:xin@localhost" />
+        <_A_Connect Type="2" DBEnum="x_data" Url="mysqlx://zx:Luck25.zx@localhost" />
       </ConnectDB>
       <ConnectServer>
         <_A_Connect Type="1" ID ="1" />
@@ -42,6 +42,7 @@
     <_A_Server Type="6" ID ="1" Name="SceneServer" IP="127.0.0.1" Port="1241" LogFile="./log/sceneserver.log" LogLevel="1">
       <ConnectServer>
         <_A_Connect Type="1" ID ="1" />
+        <_A_Connect Type="2" ID ="1" />
       </ConnectServer>
     </_A_Server>
   </ServerInfo>

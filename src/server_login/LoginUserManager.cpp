@@ -1,6 +1,5 @@
 #include "LoginUserManager.h"
 
-#include "LoginUser.h"
 #include "LoginServer.h"
 #include "ZoneServerManager.h"
 
@@ -8,6 +7,15 @@ using namespace mysqlx;
 using namespace x::login;
 using namespace x::tool;
 
+/// LoginUser
+LoginUser::LoginUser() :
+	_id(0),
+	_state(LoginState::OFFLINE),
+	_lastAccessTime(0) {
+
+}
+
+/// LoginUserManager
 LoginUserManager::LoginUserManager() {
 	
 }
@@ -15,6 +23,15 @@ LoginUserManager::LoginUserManager() {
 void LoginUserManager::Init() {
 	x::tool::GenerateRSAKey(_private_key, _public_key);
 	_uuidGenerator.Init(0, 0);
+}
+
+std::shared_ptr<LoginUser> LoginUserManager::FindUser(ull actid) {
+	auto it = _userManager.find(actid);
+	if (it != _userManager.end()) {
+		return it->second;
+	}
+
+	return nullptr;
 }
 
 void LoginUserManager::RegisterMessageCallback() {

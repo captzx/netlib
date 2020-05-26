@@ -32,8 +32,12 @@ public:
 public:
 	bool SendAllZoneList(const TcpConnectionPtr& pConnection);
 	void OnSelectZoneServer(const TcpConnectionPtr&, const std::shared_ptr<SelectZoneServer>&);
-	void OnResponsePlayerLoginData(const TcpConnectionPtr& pConnection, const std::shared_ptr<ResponsePlayerLoginData>& pRecv);
-
+	void OnResponseZoneRoleData(const TcpConnectionPtr& pConnection, const std::shared_ptr<ResponseZoneRoleData>& pRecv);
+	void OnReqCreateRole(const TcpConnectionPtr& pConnection, const std::shared_ptr<ReqCreateRole>& pRecv);
+	void OnRspCreateRole(const TcpConnectionPtr& pConnection, const std::shared_ptr<RspCreateRole>& pRecv);
+	void OnReqEnterGame(const TcpConnectionPtr& pConnection, const std::shared_ptr<ReqEnterGame>& pRecv);
+	void OnRspEnterGame(const TcpConnectionPtr& pConnection, const std::shared_ptr<RspEnterGame>& pRecv);
+	
 private:
 	std::map<int, ZoneServer> _zoneList;
 };

@@ -12,12 +12,18 @@ LoginServer::LoginServer(){
 }
 
 void LoginServer::InitModule() {
-	ProtobufDispatcher& dispatcher = LoginServer::GetInstance().GetDispatcher();
-	dispatcher.RegisterMessageCallback<PassiveHeartBeat>(std::bind(&LoginServer::OnPassiveHeartBeat, this, std::placeholders::_1, std::placeholders::_2));
-
 	LoginUserManager::GetInstance().Init();
 	LoginUserManager::GetInstance().RegisterMessageCallback();
 
 	ZoneServerManager::GetInstance().InitServerList();
 	ZoneServerManager::GetInstance().RegisterMessageCallback();
+}
+
+int main(int argc, char* argv[]) {
+	if (argc != 2)  std::cout << "Usage: " << argv[0] << " id\n";
+
+	GlobalConfig::GetInstance().LoadFile("config.xml");
+	LoginServer::GetInstance().Start(atoi(argv[1]));
+
+	return 0;
 }

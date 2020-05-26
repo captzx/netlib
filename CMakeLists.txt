@@ -12,7 +12,8 @@ endif(CCACHE_FOUND)
 
 add_compile_options(-std=c++17
 	-DBOOST_ALL_DYN_LINK
-	-lz)
+	-lz
+	-lxcommon)
 set(CMAKE_BUILD_TYPE "debug")
 set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
 set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
@@ -31,7 +32,7 @@ set(XML_LIBS libtinyxml2.so)
 set(PROTOBUF_LIBS libprotobuf.so)
 set(CRYPTO_LIBS libcryptopp.so)
 set(MYSQL_LIBS libmysqlcppconn8.so)
-set(X_LIBS libxnet.so libxtools.so libxprotos.so)
+set(X_LIBS libxnet.so libxtools.so libxprotos.so libxcommon.a)
 set(ALLLIBS ${LINUX_LIBS} ${BOOST_LIBS} ${XML_LIBS} ${PROTOBUF_LIBS}  ${CRYPTO_LIBS} ${MYSQL_LIBS} ${X_LIBS})
 
 add_subdirectory(src)

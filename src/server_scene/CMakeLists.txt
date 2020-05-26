@@ -1,11 +1,8 @@
 set(TARGETNAME SceneServer)
 
-include_directories(../server_common)
-
 set(SRCS
-	../server_common/Server.cpp
 	SceneServer.cpp
-	main.cpp)
+	)
 
 add_executable(${TARGETNAME} ${SRCS})
 target_link_libraries(${TARGETNAME} ${ALLLIBS})

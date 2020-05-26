@@ -3,12 +3,9 @@ set(TARGETNAME LoginServer)
 include_directories(../server_common)
 
 set(SRCS
-	../server_common/Server.cpp
 	LoginServer.cpp
-	LoginUser.cpp
 	LoginUserManager.cpp
-	ZoneServerManager.cpp
-	main.cpp)
+	ZoneServerManager.cpp)
 
 add_executable(${TARGETNAME} ${SRCS})
 target_link_libraries(${TARGETNAME} ${ALLLIBS})

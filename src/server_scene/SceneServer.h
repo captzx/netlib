@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Server.h"
-
+#include <xcommon/Server.h>
 #include <xprotos/Server.pb.h>
+#include <xprotos/Scene.pb.h>
 
 namespace x {
 namespace scene {
@@ -16,6 +16,10 @@ namespace scene {
 	public:
 		virtual void InitModule() override;
 		virtual ServerType GetServerType() override { return ServerType::SCENE; }
+
+	public:
+		void OnLoginIntoScene(const TcpConnectionPtr&, const std::shared_ptr<LoginIntoScene>&);
+
 	};
 
 } // namespace scene

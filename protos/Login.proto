@@ -42,13 +42,48 @@ message SelectZoneServer{
   uint32 zone_id = 2;
 }
 
-message RequestPlayerLoginData {
+message RequestZoneRoleData {
   uint32 svr_id = 1;
   fixed64 act_id = 2;
 }
 
-message ResponsePlayerLoginData{
+message RoleInfo {
+  fixed64 role_id = 1;
+  string name = 2;
+}
+
+message RoleList{
+  repeated RoleInfo roles = 1;
+
+}
+
+message ResponseZoneRoleData{
   uint32 svr_id = 1;
   fixed64 act_id = 2;
-  uint32 data = 3;
+  RoleList rolelist = 3;
+}
+
+message ReqCreateRole {
+  fixed64 act_id = 1;
+  uint32 zone_id = 2;
+  uint32 svr_id = 3;
+  string name = 4;
+}
+
+message RspCreateRole {
+  uint32 result = 1;
+  fixed64 act_id = 2;
+  uint32 svr_id = 3;
+  RoleInfo role = 4;
+}
+
+message ReqEnterGame {
+  fixed64 act_id = 1;
+  fixed64 role_id = 2;
+}
+
+message RspEnterGame {
+  uint32 result = 1;
+  fixed64 act_id = 2;
+  fixed64 role_id = 3;
 }

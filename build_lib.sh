@@ -31,4 +31,14 @@ else
 	make install
 fi
 
+cd ~/netlib/src/server_common
+if [ ! -d "build" ]; then
+	mkdir build
+else
+	cd build
+	cmake ..
+	make
+	make install
+fi
+
 

@@ -1,5 +1,7 @@
 #include "ZoneServerManager.h"
 
+#include "LoginUserManager.h"
+
 using namespace x::net;
 using namespace x::tool;
 
@@ -10,7 +12,13 @@ void ZoneServerManager::RegisterMessageCallback() {
 	ProtobufDispatcher& dispatcher = LoginServer::GetInstance().GetDispatcher();
 
 	dispatcher.RegisterMessageCallback<SelectZoneServer>(std::bind(&ZoneServerManager::OnSelectZoneServer, this, std::placeholders::_1, std::placeholders::_2));
-	dispatcher.RegisterMessageCallback<ResponsePlayerLoginData>(std::bind(&ZoneServerManager::OnResponsePlayerLoginData, this, std::placeholders::_1, std::placeholders::_2));
+	dispatcher.RegisterMessageCallback<ResponseZoneRoleData>(std::bind(&ZoneServerManager::OnResponseZoneRoleData, this, std::placeholders::_1, std::placeholders::_2));
+	dispatcher.RegisterMessageCallback<ReqCreateRole>(std::bind(&ZoneServerManager::OnReqCreateRole, this, std::placeholders::_1, std::placeholders::_2));
+	dispatcher.RegisterMessageCallback<RspCreateRole>(std::bind(&ZoneServerManager::OnRspCreateRole, this, std::placeholders::_1, std::placeholders::_2));
+	dispatcher.RegisterMessageCallback<ReqEnterGame>(std::bind(&ZoneServerManager::OnReqEnterGame, this, std::placeholders::_1, std::placeholders::_2));
+	dispatcher.RegisterMessageCallback<RspEnterGame>(std::bind(&ZoneServerManager::OnRspEnterGame, this, std::placeholders::_1, std::placeholders::_2));
+	
+	
 }
 
 bool ZoneServerManager::InitServerList() {
@@ -66,21 +74,59 @@ bool ZoneServerManager::SendAllZoneList(const TcpConnectionPtr& pConnection) {
 	
 }
 
-void ZoneServerManager::OnResponsePlayerLoginData(const TcpConnectionPtr& pConnection, const std::shared_ptr<ResponsePlayerLoginData>& pRecv) {
-	log(warning, "ZoneServerManager") << "OnResponsePlayerLoginData" << pRecv->data();
+void ZoneServerManager::OnResponseZoneRoleData(const TcpConnectionPtr&, const std::shared_ptr<ResponseZoneRoleData>& pRecv) {
+	std::shared_ptr<LoginUser> pUser = LoginUserManager::GetInstance().FindUser(pRecv->act_id());
+	if (pUser && !pUser->GetConnection().expired()) {
+		TcpConnectionPtr pConnection = pUser->GetConnection().lock();
+		RoleList rolelist = pRecv->rolelist();
+		std::shared_ptr<RoleList> pSend = std::make_shared<RoleList>(rolelist);
+		pConnection->AsyncSend(pSend);
+	}
+	log(warning, "ZoneServerManager") << "OnResponseZoneRoleData";
 }
 void ZoneServerManager::OnSelectZoneServer(const TcpConnectionPtr& pConnection, const std::shared_ptr<SelectZoneServer>& pRecv) {
 	auto it = _zoneList.find(pRecv->zone_id());
 	if (it != _zoneList.end() && !it->second.wpConnection.expired()) {
 		TcpConnectionPtr pToGateWay = it->second.wpConnection.lock();
-		auto pSend = std::make_shared<RequestPlayerLoginData>();
+		auto pSend = std::make_shared<RequestZoneRoleData>();
 		if (pSend) {
 			pSend->set_svr_id(1); // 1
 			pSend->set_act_id(pRecv->act_id());
 
 			pToGateWay->AsyncSend(pSend);
 
-			log(warning, "ZoneServerManager") << "async send RequestPlayerLoginData, act_id = " << pSend->act_id();
+			log(warning, "ZoneServerManager") << "async send RequestZoneRoleData, act_id = " << pSend->act_id();
 		}
 	}
+}
+
+void ZoneServerManager::OnReqCreateRole(const TcpConnectionPtr& pConnection, const std::shared_ptr<ReqCreateRole>& pRecv) {
+	auto it = _zoneList.find(pRecv->zone_id());
+	if (it != _zoneList.end() && !it->second.wpConnection.expired()) {
+		TcpConnectionPtr pToGateWay = it->second.wpConnection.lock();
+		
+		pRecv->set_svr_id(1); // server id
+		pToGateWay->AsyncSend(pRecv);
+	}
+}
+
+void ZoneServerManager::OnRspCreateRole(const TcpConnectionPtr& pConnection, const std::shared_ptr<RspCreateRole>& pRecv) {
+	std::shared_ptr<LoginUser> pUser = LoginUserManager::GetInstance().FindUser(pRecv->act_id());
+	if (pUser && !pUser->GetConnection().expired()) {
+		TcpConnectionPtr pConnection = pUser->GetConnection().lock();
+		pConnection->AsyncSend(pRecv);
+	}
+}
+
+
+void ZoneServerManager::OnReqEnterGame(const TcpConnectionPtr& pConnection, const std::shared_ptr<ReqEnterGame>& pRecv) {
+	auto it = _zoneList.find(1);
+	if (it != _zoneList.end() && !it->second.wpConnection.expired()) {
+		TcpConnectionPtr pToGateWay = it->second.wpConnection.lock();
+		pToGateWay->AsyncSend(pRecv);
+	}
+}
+
+void ZoneServerManager::OnRspEnterGame(const TcpConnectionPtr& pConnection, const std::shared_ptr<RspEnterGame>& pRecv) {
+	log(warning, "ZoneServerManager") << "todo: OnRspEnterGame";
 }
