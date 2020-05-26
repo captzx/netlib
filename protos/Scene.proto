@@ -5,3 +5,7 @@ message LoginIntoScene {
   fixed64 role_id = 2;
   string name = 3; // data
 }
+
+message OffLine {
+
+}

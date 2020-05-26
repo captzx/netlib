@@ -57,10 +57,12 @@ message RoleList{
 
 }
 
-message ResponseZoneRoleData{
+message ResponseZoneRoleData {
   uint32 svr_id = 1;
   fixed64 act_id = 2;
-  RoleList rolelist = 3;
+  string ip = 3;
+  uint32 port = 4;
+  RoleList rolelist = 5;
 }
 
 message ReqCreateRole {

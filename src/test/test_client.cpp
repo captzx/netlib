@@ -5,6 +5,7 @@
 
 #include <xprotos/Server.pb.h>
 #include <xprotos/Login.pb.h>
+#include <xprotos/Scene.pb.h>
 
 using namespace x::tool;
 using namespace x::net;
@@ -22,7 +23,7 @@ public:
 		_dispatcher.RegisterMessageCallback<RegisterResult>(std::bind(&TestClient::OnRegisterResult, this, std::placeholders::_1, std::placeholders::_2));
 		_dispatcher.RegisterMessageCallback<LoginResult>(std::bind(&TestClient::OnLoginResult, this, std::placeholders::_1, std::placeholders::_2));
 		_dispatcher.RegisterMessageCallback<ReturnZoneList>(std::bind(&TestClient::OnReturnZoneList, this, std::placeholders::_1, std::placeholders::_2));
-		_dispatcher.RegisterMessageCallback<RoleList>(std::bind(&TestClient::OnRoleList, this, std::placeholders::_1, std::placeholders::_2));
+		_dispatcher.RegisterMessageCallback<ResponseZoneRoleData>(std::bind(&TestClient::OnResponseZoneRoleData, this, std::placeholders::_1, std::placeholders::_2));
 		_dispatcher.RegisterMessageCallback<RspCreateRole>(std::bind(&TestClient::OnRspCreateRole, this, std::placeholders::_1, std::placeholders::_2));
 		
 		
@@ -39,6 +40,8 @@ public:
 
 public:
 	void Init() {
+		_state = 0;
+
 		global_logger_init("./log/client.log");
 		global_logger_set_filter(severity >= debug);
 
@@ -50,6 +53,7 @@ public:
 		_pConnection = _pTcpService->AsyncConnect("127.0.0.1", 1235);
 
 		_pTcpService->Start();
+		_state = 1;
 	}
 
 	void Close() { _pTcpService->Close(); }
@@ -63,92 +67,107 @@ public:
 					log(normal, "TestClient") << "not connection!";
 					continue;
 				}
-				switch (line[0])
-				{
-				case '0':
-				{
-					Close();
-					log(normal, "TestClient") << "active close!";
+
+				if (line[0] == '-') {
+					log(normal, "TestClient") << "check state: " << _state;
+					continue;
 				}
-				break;
-				case '1':
-				{
-					auto pMsg = std::make_shared<RequestRsaPublicKey>();
-					_pConnection->AsyncSend(pMsg);
-					log(normal, "TestClient") << "request ras public key!";
-				}
-				break;
-				case '2':
-				{
-					if (_key.empty()) {
-						log(normal, "TestClient") << "request ras public key first, please!";
-						break;
+
+				if (_state == 1) {
+					switch (line[0])
+					{
+					case '0':
+					{
+						Close();
+						log(normal, "TestClient") << "active close!";
 					}
-
-					auto pMsg = std::make_shared<RequestRegister>();
-					if (pMsg) {
-						pMsg->set_account("captzx");
-						pMsg->set_password(RSAEncrypt(_key, "123"));
-						_pConnection->AsyncSend(pMsg);
-					}
-
-					log(normal, "TestClient") << "request register!";
-				}
-				break;
-				case '3':
-				{
-					if (_key.empty()) {
-						log(normal, "TestClient") << "request ras public key first, please!";
-						break;
-					}
-
-					auto pMsg = std::make_shared<RequestLogin>();
-					if (pMsg) {
-						pMsg->set_account("captzx");
-						pMsg->set_password(RSAEncrypt(_key, "123"));
-						_pConnection->AsyncSend(pMsg);
-					}
-
-					log(normal, "TestClient") << "request login!";
-				}
-				break;
-				case '4':
-				{
-					auto pMsg = std::make_shared<SelectZoneServer>();
-					if (pMsg) {
-						pMsg->set_act_id(_act_id);
-						pMsg->set_zone_id(1); // zone_id
-
-						_pConnection->AsyncSend(pMsg);
-					}
-
-					log(normal, "TestClient") << "select zone server 1!";
-				}
-				break;
-				case '5':
-				{
-					auto pMsg = std::make_shared<ReqCreateRole>();
-					if (pMsg) {
-						pMsg->set_act_id(_act_id);
-						pMsg->set_zone_id(1); // zone_id
-						pMsg->set_name("captzx");
-
-						_pConnection->AsyncSend(pMsg);
-					}
-				}
-				break;
-				case '6':
-				{
-					auto pMsg = std::make_shared<ReqEnterGame>();
-					if (pMsg) {
-						pMsg->set_act_id(_act_id);
-						pMsg->set_role_id(2147549187);
-
-						_pConnection->AsyncSend(pMsg);
-					}
-				}
-				default:
 					break;
+					case '1':
+					{
+						auto pMsg = std::make_shared<RequestRsaPublicKey>();
+						_pConnection->AsyncSend(pMsg);
+						log(normal, "TestClient") << "request ras public key!";
+					}
+					break;
+					case '2':
+					{
+						if (_key.empty()) {
+							log(normal, "TestClient") << "request ras public key first, please!";
+							break;
+						}
+
+						auto pMsg = std::make_shared<RequestRegister>();
+						if (pMsg) {
+							pMsg->set_account("captzx");
+							pMsg->set_password(RSAEncrypt(_key, "123"));
+							_pConnection->AsyncSend(pMsg);
+						}
+
+						log(normal, "TestClient") << "request register!";
+					}
+					break;
+					case '3':
+					{
+						if (_key.empty()) {
+							log(normal, "TestClient") << "request ras public key first, please!";
+							break;
+						}
+
+						auto pMsg = std::make_shared<RequestLogin>();
+						if (pMsg) {
+							pMsg->set_account("captzx");
+							pMsg->set_password(RSAEncrypt(_key, "123"));
+							_pConnection->AsyncSend(pMsg);
+						}
+
+						log(normal, "TestClient") << "request login!";
+					}
+					break;
+					case '4':
+					{
+						auto pMsg = std::make_shared<SelectZoneServer>();
+						if (pMsg) {
+							pMsg->set_act_id(_act_id);
+							pMsg->set_zone_id(1); // zone_id
+
+							_pConnection->AsyncSend(pMsg);
+						}
+
+						log(normal, "TestClient") << "select zone server 1!";
+					}
+					break;
+					case '5':
+					{
+						auto pMsg = std::make_shared<ReqCreateRole>();
+						if (pMsg) {
+							pMsg->set_act_id(_act_id);
+							pMsg->set_zone_id(1); // zone_id
+							pMsg->set_name("captzx");
+
+							_pConnection->AsyncSend(pMsg);
+						}
+					}
+					break;
+					case '6':
+					{
+						auto pMsg = std::make_shared<ReqEnterGame>();
+						if (pMsg) {
+							pMsg->set_act_id(_act_id);
+							pMsg->set_role_id(2147549187);
+
+							_pConnection->AsyncSend(pMsg);
+
+							_pConnection = _pTcpService->AsyncConnect(_ip, _port);
+							_state = 2;
+						}
+					}
+					default:
+						break;
+					}
+				}
+				else if (_state == 2) {
+					auto pMsg = std::make_shared<OffLine>();
+					if (pMsg) _pConnection->AsyncSend(pMsg);
 				}
 			}
 		}
@@ -234,14 +253,19 @@ public:
 			log(debug, "TestClient") << "recv zone server: " << zone.id() << " " << zone.name() << " " << zone.ip() << " " << zone.port();
 		}
 	}
-	void OnRoleList(const TcpConnectionPtr& pConnection, const std::shared_ptr<RoleList>& pMsg) {
+	void OnResponseZoneRoleData(const TcpConnectionPtr& pConnection, const std::shared_ptr<ResponseZoneRoleData>& pMsg) {
 		log(debug, "TestClient") << "recv RoleList";
 
-		for (int i = 0; i < pMsg->roles_size(); ++i) {
-			auto role = pMsg->roles(i);
+		RoleList roleList = pMsg->rolelist();
+
+		for (int i = 0; i < roleList.roles_size(); ++i) {
+			auto role = roleList.roles(i);
 
 			log(debug, "TestClient") << role.name() << " " << role.role_id();
 		}
+
+		_ip = pMsg->ip();
+		_port = pMsg->port();
 	}
 	void OnRspCreateRole(const TcpConnectionPtr& pConnection, const std::shared_ptr<RspCreateRole>& pMsg) {
 		RoleInfo role = pMsg->role();
@@ -259,6 +283,9 @@ private:
 	std::string _key;
 	ull _act_id;
 	std::map<unsigned int, ZoneServer> _zoneList;
+	std::string _ip;
+	unsigned int _port;
+	unsigned int _state;
 };
 
 int main(int argc, char* argv[])

@@ -78,9 +78,11 @@ void ZoneServerManager::OnResponseZoneRoleData(const TcpConnectionPtr&, const st
 	std::shared_ptr<LoginUser> pUser = LoginUserManager::GetInstance().FindUser(pRecv->act_id());
 	if (pUser && !pUser->GetConnection().expired()) {
 		TcpConnectionPtr pConnection = pUser->GetConnection().lock();
-		RoleList rolelist = pRecv->rolelist();
-		std::shared_ptr<RoleList> pSend = std::make_shared<RoleList>(rolelist);
-		pConnection->AsyncSend(pSend);
+
+		auto address = pUser->GetZoneAddress();
+		pRecv->set_ip(address.first);
+		pRecv->set_port(address.second);
+		pConnection->AsyncSend(pRecv);
 	}
 	log(warning, "ZoneServerManager") << "OnResponseZoneRoleData";
 }
@@ -97,6 +99,9 @@ void ZoneServerManager::OnSelectZoneServer(const TcpConnectionPtr& pConnection, 
 
 			log(warning, "ZoneServerManager") << "async send RequestZoneRoleData, act_id = " << pSend->act_id();
 		}
+
+		std::shared_ptr<LoginUser> pUser = LoginUserManager::GetInstance().FindUser(pRecv->act_id());
+		pUser->SetZoneAddress({ it->second.ip, it->second.port });
 	}
 }
 

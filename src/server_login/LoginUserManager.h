@@ -29,12 +29,16 @@ public:
 
 	void SetConnection(const TcpConnectionPtr& pConnection) { _wpConnection = pConnection; }
 	TcpConnectionWeakPtr& GetConnection() { return _wpConnection; }
+
+	void SetZoneAddress(std::pair<std::string, unsigned int> address) { _address = address; }
+	std::pair<std::string, unsigned int> GetZoneAddress() { return _address; }
 private:
 	ull _id;
 	LoginState _state;
 	unsigned int _lastAccessTime;
 
 	TcpConnectionWeakPtr _wpConnection;
+	std::pair<std::string, unsigned int> _address;
 };
 
 class LoginUserManager : public Singleton<LoginUserManager> {
@@ -65,6 +69,7 @@ private:
 	std::string _private_key;
 	std::string _public_key;
 	UuidGenerator _uuidGenerator;
+	std::pair<std::string, unsigned int> _address;
 	std::map<ull, std::shared_ptr<LoginUser>> _userManager;
 };
 
