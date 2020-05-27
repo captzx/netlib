@@ -38,10 +38,8 @@ void x::tool::global_logger_set_filter(const logging::filter& filter) {
 	logging::core::get()->set_filter(filter);
 }
 
-std::ostream& x::tool::operator<< (std::ostream& strm, severity_level level)
-{
-	static const char* strings[] =
-	{
+std::ostream& x::tool::operator<< (std::ostream& strm, severity_level level) {
+	static const char* strings[] = {
 		"TRIVIAL",
 		"DEBUG",
 		"NORMAL",
@@ -54,7 +52,7 @@ std::ostream& x::tool::operator<< (std::ostream& strm, severity_level level)
 	if (static_cast<std::size_t>(level) < sizeof(strings) / sizeof(*strings))
 		strm << strings[level];
 	else
-		strm << static_cast<int>(level);
+		strm << static_cast<int32_t>(level);
 
 	return strm;
 }

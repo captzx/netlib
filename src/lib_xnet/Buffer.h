@@ -58,13 +58,13 @@ public:
 	void EnsureWriteable(size_t len) {
 		if (Writeable() < len) MakeMoreWriteSpace(len);
 	}
-	unsigned int Readable() {
+	uint32_t Readable() {
 		return _wptr - _rptr;
 	}
-	unsigned int Writeable() {
+	uint32_t Writeable() {
 		return _buf.size() - _wptr;
 	}
-	unsigned int AlreadyRead() {
+	uint32_t AlreadyRead() {
 		return _rptr;
 	}
 	void MakeMoreWriteSpace(size_t len) {
@@ -72,7 +72,7 @@ public:
 			_buf.resize(_wptr + len);
 		}
 		else {
-			unsigned int readable = Readable();
+			uint32_t readable = Readable();
 			std::copy(ReadPtr(), WritePtr(), BeginPtr() + PrependSize);
 			_rptr = PrependSize;
 			_wptr = _rptr + readable;
@@ -102,7 +102,7 @@ public:
 		std::copy(d, d + len, BeginPtr() + _rptr);
 	}
 
-	void Retrieve(unsigned int len) {
+	void Retrieve(uint32_t len) {
 		if (len < Readable()) {
 			_rptr += len;
 		}

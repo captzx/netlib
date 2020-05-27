@@ -13,8 +13,8 @@ public:
 	virtual ~SupervisorServer(){ }
 
 public:
-	virtual void InitModule() override;
 	virtual ServerType GetServerType() override { return ServerType::SUPERVISOR; }
+	virtual void InitModule() override;
 
 public:
 	void AsyncHeartBeatInLoop(std::shared_ptr<boost::asio::deadline_timer> pTimer);

@@ -10,8 +10,8 @@ using namespace google::protobuf;
 const static uint32_t HEADER_LEN_SIZE = sizeof(uint32_t);
 const static uint32_t MESSAGE_NAME_LEN_SIZE = sizeof(uint32_t);
 const static uint32_t CHECKSUM_LEN_SIZE = Adler32::DIGESTSIZE;
-const static int MESSAGE_MIN_LEN = MESSAGE_NAME_LEN_SIZE + CHECKSUM_LEN_SIZE + 2; // MESSAGE_NAME_LEN_SIZE + CHECKSUM_LEN_SIZE + message name len(at least one char + '\n')
-const static int MESSAGE_MAX_LEN = 64 * 1024 * 1024;
+const static int32_t MESSAGE_MIN_LEN = MESSAGE_NAME_LEN_SIZE + CHECKSUM_LEN_SIZE + 2; // MESSAGE_NAME_LEN_SIZE + CHECKSUM_LEN_SIZE + message name len(at least one char + '\n')
+const static int32_t MESSAGE_MAX_LEN = 64 * 1024 * 1024;
 
 /// ProtobufCodec
 Adler32 ProtobufCodec::_adler32;
@@ -24,7 +24,7 @@ bool ProtobufCodec::PackMessage(const MessagePtr& pMessage, Buffer& buf) {
 	buf.Write(messageNameLen);
 	buf.Write(messageName.c_str(), messageNameLen);
 
-	int messageLen = pMessage->ByteSizeLong();
+	int32_t messageLen = pMessage->ByteSizeLong();
 	buf.EnsureWriteable(messageLen);
 	uint8_t* start = reinterpret_cast<uint8_t*>(buf.WritePtr());
 	uint8_t* end = pMessage->SerializeWithCachedSizesToArray(start);
@@ -34,8 +34,8 @@ bool ProtobufCodec::PackMessage(const MessagePtr& pMessage, Buffer& buf) {
 	}
 	buf.MoveWritePtr(messageLen);
 
-	byte checkSum[CHECKSUM_LEN_SIZE];
-	_adler32.CalculateDigest(checkSum, reinterpret_cast<const byte*>(buf.ReadPtr()), static_cast<size_t>(buf.Readable()));
+	uint8_t checkSum[CHECKSUM_LEN_SIZE];
+	_adler32.CalculateDigest(checkSum, reinterpret_cast<const uint8_t*>(buf.ReadPtr()), static_cast<size_t>(buf.Readable()));
 	buf.Write(checkSum, CHECKSUM_LEN_SIZE);
 	assert(buf.Readable() == MESSAGE_NAME_LEN_SIZE + messageNameLen + messageLen + CHECKSUM_LEN_SIZE);
 
@@ -46,9 +46,9 @@ bool ProtobufCodec::PackMessage(const MessagePtr& pMessage, Buffer& buf) {
 }
 
 MessagePtr ProtobufCodec::ParseDataPackage(const char* buf, uint32_t dataLen) {
-	byte expectedCheckSum[CHECKSUM_LEN_SIZE], checkSum[CHECKSUM_LEN_SIZE];
+	uint8_t expectedCheckSum[CHECKSUM_LEN_SIZE], checkSum[CHECKSUM_LEN_SIZE];
 	std::memcpy(expectedCheckSum, buf + (dataLen - CHECKSUM_LEN_SIZE), CHECKSUM_LEN_SIZE);
-	_adler32.CalculateDigest(checkSum, reinterpret_cast<const byte*>(buf), static_cast<size_t>(dataLen - CHECKSUM_LEN_SIZE));
+	_adler32.CalculateDigest(checkSum, reinterpret_cast<const uint8_t*>(buf), static_cast<size_t>(dataLen - CHECKSUM_LEN_SIZE));
 	if (_adler32.VerifyDigest(expectedCheckSum, checkSum, CHECKSUM_LEN_SIZE)) {
 		log(error, "ProtobufCodec") << "parse data failure, error message: check failure!";
 		return nullptr;
@@ -57,14 +57,14 @@ MessagePtr ProtobufCodec::ParseDataPackage(const char* buf, uint32_t dataLen) {
 	uint32_t nameLen = 0;
 	std::memcpy(&nameLen, buf, MESSAGE_NAME_LEN_SIZE);
 	if (nameLen < 2 || nameLen > dataLen - (MESSAGE_NAME_LEN_SIZE + CHECKSUM_LEN_SIZE)) {
-		log(error, "ProtobufCodec") << "parse data failure, error message: name len too short(or long)! nameLen =" << nameLen;
+		log(error, "ProtobufCodec") << "parse data failure, error message: name len too short(or int32_t)! nameLen =" << nameLen;
 		return nullptr;
 	}
 	std::string messageName(buf + MESSAGE_NAME_LEN_SIZE, buf + MESSAGE_NAME_LEN_SIZE + nameLen - 1);
 	MessagePtr pMessage = CreateMessageByName(messageName);
 	if (pMessage) {
 		const char* messageData = buf + MESSAGE_NAME_LEN_SIZE + nameLen;
-		int messageLen = dataLen - (nameLen + MESSAGE_NAME_LEN_SIZE + CHECKSUM_LEN_SIZE);
+		int32_t messageLen = dataLen - (nameLen + MESSAGE_NAME_LEN_SIZE + CHECKSUM_LEN_SIZE);
 		if (pMessage->ParseFromArray(messageData, messageLen)) {
 			log(trivial, "ProtobufCodec") << "parse data success, get message: \"" << messageName << "\"";
 		}

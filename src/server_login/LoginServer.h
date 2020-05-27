@@ -15,8 +15,8 @@ public:
 	virtual ~LoginServer() {}
 
 public:
-	virtual void InitModule() override;
 	virtual ServerType GetServerType() override { return ServerType::LOGIN; }
+	virtual void InitModule() override;
 };
 
 } // namespace login

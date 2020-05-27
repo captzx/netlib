@@ -37,7 +37,7 @@ private:
 	std::string _fileName;
 };
 
-enum class ServerType : unsigned int{
+enum class ServerType : uint32_t{
 	UNDEFINED = 0,
 	SUPERVISOR = 1,
 	GATEWAY = 2,
@@ -48,23 +48,23 @@ enum class ServerType : unsigned int{
 };
 
 struct ServerCfg {
-	unsigned int Type = 0;
+	uint32_t Type = 0;
 	std::string Name;
-	unsigned int ID = 0;
+	uint32_t ID = 0;
 	std::string IP;
-	unsigned int Port = 0;
+	uint32_t Port = 0;
 	std::string LogFile;
-	unsigned int LogLevel = 0;
+	uint32_t LogLevel = 0;
 
 	struct ConnectDB {
-		unsigned int Type;
+		uint32_t Type;
 		std::string Url;
 	};
 	std::vector<ConnectDB> ConnectDBCfgs;
 
 	struct ConnectServer {
-		unsigned int Type = 0;
-		unsigned int ID = 0;
+		uint32_t Type = 0;
+		uint32_t ID = 0;
 	};
 	std::vector<ConnectServer> ConnectSvrCfgs;
 };
@@ -128,7 +128,7 @@ public:
 	}
 
 public:
-	ServerCfg* GetServerCfgByType(const std::pair<unsigned int, unsigned int>& pair) {
+	ServerCfg* GetServerCfgByType(const std::pair<uint32_t, uint32_t>& pair) {
 		auto it = _serverCfgs.find(pair);
 		if (it != _serverCfgs.end()) {
 			return &(it->second);
@@ -139,7 +139,7 @@ public:
 
 private:
 
-	std::map<std::pair<unsigned int, unsigned int>, ServerCfg> _serverCfgs; // {type, id} => ServerCfg
+	std::map<std::pair<uint32_t, uint32_t>, ServerCfg> _serverCfgs; // {type, id} => ServerCfg
 };
 
 } // namespace tool

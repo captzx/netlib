@@ -3,9 +3,7 @@
 #include "LoginServer.h"
 #include "ZoneServerManager.h"
 
-using namespace mysqlx;
 using namespace x::login;
-using namespace x::tool;
 
 /// LoginUser
 LoginUser::LoginUser() :
@@ -25,7 +23,7 @@ void LoginUserManager::Init() {
 	_uuidGenerator.Init(0, 0);
 }
 
-std::shared_ptr<LoginUser> LoginUserManager::FindUser(ull actid) {
+std::shared_ptr<LoginUser> LoginUserManager::FindUser(uint64_t actid) {
 	auto it = _userManager.find(actid);
 	if (it != _userManager.end()) {
 		return it->second;
@@ -35,56 +33,55 @@ std::shared_ptr<LoginUser> LoginUserManager::FindUser(ull actid) {
 }
 
 void LoginUserManager::RegisterMessageCallback() {
-	ProtobufDispatcher& dispatcher = LoginServer::GetInstance().GetDispatcher();
-
-	dispatcher.RegisterMessageCallback<RequestRsaPublicKey>(std::bind(&LoginUserManager::OnRequestRsaPublicKey, this, std::placeholders::_1, std::placeholders::_2));
-	dispatcher.RegisterMessageCallback<RequestRegister>(std::bind(&LoginUserManager::OnRequestRegister, this, std::placeholders::_1, std::placeholders::_2));
-	dispatcher.RegisterMessageCallback<RequestLogin>(std::bind(&LoginUserManager::OnRequestLogin, this, std::placeholders::_1, std::placeholders::_2));
+	GET_MESSAGE_DISPATCHER(LoginServer::GetInstance().GetDispatcher());
+	REGISTER_MESSAGE_CALL_BACK(LoginUserManager, this, ReqRsaPublicKey);
+	REGISTER_MESSAGE_CALL_BACK(LoginUserManager, this, ReqRegister);
+	REGISTER_MESSAGE_CALL_BACK(LoginUserManager, this, ReqLogin);
 }
 
-void LoginUserManager::OnRequestRsaPublicKey(const TcpConnectionPtr& pConnection, const std::shared_ptr<RequestRsaPublicKey>&) {
-	auto pMsg = std::make_shared<ResponseRsaPublicKey>();
-	if (pMsg) {
-		pMsg->set_publickey(_public_key);
+void LoginUserManager::OnReqRsaPublicKey(const TcpConnectionPtr& pConn, const std::shared_ptr<ReqRsaPublicKey>&) {
+	auto pSend = std::make_shared<RspRsaPublicKey>();
+	if (pSend) {
+		pSend->set_publickey(_public_key);
 
-		pConnection->AsyncSend(pMsg);
+		pConn->AsyncSend(pSend);
 	}
 }
 
-void LoginUserManager::OnRequestRegister(const TcpConnectionPtr& pConnection, const std::shared_ptr<RequestRegister>& pMsg) {
-	std::string account = pMsg->account();
-	std::string password = RSADecrypt(_private_key, pMsg->password());
+void LoginUserManager::OnReqRegister(const TcpConnectionPtr& pConn, const std::shared_ptr<ReqRegister>& pRecv) {
+	std::string account = pRecv->account();
+	std::string password = RSADecrypt(_private_key, pRecv->password());
 
 	log(debug, "LoginUserManager") << "register account: " << account << ", password: " << password;
 
 	if (VerifyAccount(account)) {
 		std::shared_ptr<LoginUser> pUser = CreateUser(account);
 		if (SaveUser(pUser, account, password)) {
-			SendRegisterResult(pConnection, 0); // success
+			SendRegisterResult(pConn, 0); // success
 			_userManager.insert({ pUser->GetID(), pUser });
 
 			log(debug, "LoginUserManager") << "create user, user id: " << pUser->GetID();
 			log(debug, "LoginUserManager") << "user manager size: " << _userManager.size();
 		}
 	}
-	else SendRegisterResult(pConnection, 1); // alread existed
+	else SendRegisterResult(pConn, 1); // alread existed
 }
 
-bool LoginUserManager::SendRegisterResult(const TcpConnectionPtr& pConnection, int result) {
-	auto pMsg = std::make_shared<RegisterResult>();
-	if (pMsg) {
-		pMsg->set_result(result);
+bool LoginUserManager::SendRegisterResult(const TcpConnectionPtr& pConn, int32_t result) {
+	auto pSend = std::make_shared<RegisterResult>();
+	if (pSend) {
+		pSend->set_result(result);
 
-		pConnection->AsyncSend(pMsg);
+		pConn->AsyncSend(pSend);
 	}
 
 	return true;
 }
 
 
-void LoginUserManager::OnRequestLogin(const TcpConnectionPtr& pConnection, const std::shared_ptr<RequestLogin>& pMsg) {
-	std::string account = pMsg->account();
-	std::string password = RSADecrypt(_private_key, pMsg->password());
+void LoginUserManager::OnReqLogin(const TcpConnectionPtr& pConn, const std::shared_ptr<ReqLogin>& pRecv) {
+	std::string account = pRecv->account();
+	std::string password = RSADecrypt(_private_key, pRecv->password());
 	std::string inputPassword = PBKDFEncrypt(password, SHA3_256Hash(password));
 
 	std::ostringstream oss;
@@ -94,33 +91,33 @@ void LoginUserManager::OnRequestLogin(const TcpConnectionPtr& pConnection, const
 	auto pSend = std::make_shared<LoginResult>();
 
 	DBServicePtr& pDBService = LoginServer::GetInstance().GetDBService();
-	SqlResult result = pDBService->GetDBConnectionByType((unsigned int)DBType::x_login)->ExecuteSql(oss.str());
+	SqlResult result = pDBService->GetDBConnectionByType((uint32_t)DBType::x_login)->ExecuteSql(oss.str());
 	if (result.count() == 0) pSend->set_result(1);
 	else {
 		assert(result.count() == 1);
 		Row row = result.fetchOne();
 		assert(!row.isNull());
-		ull userid = static_cast<uint64_t>(row.get(0));
+		uint64_t userid = static_cast<uint64_t>(row.get(0));
 		std::string existPassword = static_cast<std::string>(row.get(1));
 		if (inputPassword == existPassword) {
 			std::shared_ptr<LoginUser> pUser = std::make_shared<LoginUser>();
 			pUser->SetID(userid);
 			pUser->SetState(LoginState::ONLINE);
 			pUser->SetLastAccessTime(Now::Second());
-			pUser->SetConnection(pConnection);
+			pUser->SetConnection(pConn);
 			_userManager[userid] = pUser;
 
 			pSend->set_result(0);
 			pSend->set_act_id(userid);
 
-			ZoneServerManager::GetInstance().SendAllZoneList(pConnection);
+			ZoneServerManager::GetInstance().SendAllZoneList(pConn);
 		}
 		else {
 			pSend->set_result(2);
 		}
 	}
 
-	pConnection->AsyncSend(pSend);
+	pConn->AsyncSend(pSend);
 }
 
 bool LoginUserManager::VerifyAccount(const std::string& account) {
@@ -129,7 +126,7 @@ bool LoginUserManager::VerifyAccount(const std::string& account) {
 	oss << "SELECT user.`act` FROM x_login.user WHERE user.`act` = '" << account << "';";
 	
 	DBServicePtr& pDBService = LoginServer::GetInstance().GetDBService();
-	SqlResult result = pDBService->GetDBConnectionByType((unsigned int)DBType::x_login)->ExecuteSql(oss.str());
+	SqlResult result = pDBService->GetDBConnectionByType((uint32_t)DBType::x_login)->ExecuteSql(oss.str());
 
 	if (result.count() != 0) {
 		log(debug, "LoginUserManager") << "account existed, login or pick another!";
@@ -161,7 +158,7 @@ bool LoginUserManager::SaveUser(const std::shared_ptr<LoginUser>& pUser, const s
 	oss << "INSERT INTO x_login.user(`id`, `act`, `pwd`) VALUES (" << pUser->GetID() << ", '" << account << "', '" << encrypt << "');";
 
 	DBServicePtr& pDBService = LoginServer::GetInstance().GetDBService();
-	pDBService->GetDBConnectionByType((unsigned int)DBType::x_login)->ExecuteSql(oss.str());
+	pDBService->GetDBConnectionByType((uint32_t)DBType::x_login)->ExecuteSql(oss.str());
 
 	return true;
 }

@@ -6,7 +6,7 @@ using ::std::endl;
 using namespace ::mysqlx;
 
 
-int main(int argc, const char* argv[])
+int32_t main(int32_t argc, const char* argv[])
 try {
 
 	const char* url = (argc > 1 ? argv[1] : "mysqlx://zx:Luck25.zx@localhost");
@@ -18,20 +18,13 @@ try {
 
 	cout << "Session accepted, creating collection..." << endl;
 
-	SqlResult result = sess.sql(R"(create database if not exists test2)").execute();
-
-
-	result = sess.sql(R"(create table if not exists test2.person (
-					  `id` int(0) NOT NULL,
-					  `name` varchar(255) NOT NULL,
-					  `age` int(0) NOT NULL,
-					  `sex` bit(1) NOT NULL,
-					  `tel` varchar(255) NOT NULL,
-					  `address` varchar(255) NULL,
-					  PRIMARY KEY (`id`)
-					))").execute();
-
-	Schema sch = sess.createSchema("test2", true);
+	SqlResult result = sess.sql(R"(show databases;)").execute();
+	if (result.hasData()) {
+		std::cout << "column count: " << result.getColumnCount() << std::endl;
+		std::cout << "row count: " << result.count() << std::endl;
+		std::cout << "affected count: " << result.getAffectedItemsCount() << std::endl;
+		std::cout << "warnning count: " << result.getWarningsCount() << std::endl;
+	}
 /*
 	Collection coll = sch.createCollection("person", true);
 
@@ -58,7 +51,7 @@ try {
 
 	DocResult docs = coll.find("age > 1 and name like 'ba%'").execute();
 
-	int i = 0;
+	int32_t i = 0;
 	for (DbDoc doc : docs)
 	{
 		cout << "doc#" << i++ << ": " << doc << endl;
@@ -80,7 +73,7 @@ try {
 				cout << "  date `" << fld << "`: " << date[fld] << endl;
 			}
 			string month = doc["date"]["month"];
-			int day = date["day"];
+			int32_t day = date["day"];
 			cout << "  month: " << month << endl;
 			cout << "  day: " << day << endl;
 		}

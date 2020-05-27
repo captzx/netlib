@@ -12,7 +12,7 @@ void CenterServer::InitModule() {
 }
 
 
-int main(int argc, char* argv[]) {
+int32_t main(int32_t argc, char* argv[]) {
 	if (argc != 2)  std::cout << "Usage: " << argv[0] << " id\n";
 
 	GlobalConfig::GetInstance().LoadFile("config.xml");

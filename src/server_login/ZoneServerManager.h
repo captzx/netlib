@@ -4,18 +4,16 @@
 
 #include "LoginServer.h"
 
-using x::tool::Singleton;
-
 namespace x {
 
 namespace login {
 
 struct ZoneServer {
-	int id = 0;
+	int32_t id = 0;
 	std::string name;
 	std::string ip;
-	unsigned int port = 0;
-	unsigned int state = 0;
+	uint32_t port = 0;
+	uint32_t state = 0;
 
 	TcpConnectionWeakPtr wpConnection;
 };
@@ -30,16 +28,16 @@ public:
 
 
 public:
-	bool SendAllZoneList(const TcpConnectionPtr& pConnection);
+	bool SendAllZoneList(const TcpConnectionPtr&);
 	void OnSelectZoneServer(const TcpConnectionPtr&, const std::shared_ptr<SelectZoneServer>&);
-	void OnResponseZoneRoleData(const TcpConnectionPtr& pConnection, const std::shared_ptr<ResponseZoneRoleData>& pRecv);
-	void OnReqCreateRole(const TcpConnectionPtr& pConnection, const std::shared_ptr<ReqCreateRole>& pRecv);
-	void OnRspCreateRole(const TcpConnectionPtr& pConnection, const std::shared_ptr<RspCreateRole>& pRecv);
-	void OnReqEnterGame(const TcpConnectionPtr& pConnection, const std::shared_ptr<ReqEnterGame>& pRecv);
-	void OnRspEnterGame(const TcpConnectionPtr& pConnection, const std::shared_ptr<RspEnterGame>& pRecv);
+	void OnRspZoneRoleData(const TcpConnectionPtr&, const std::shared_ptr<RspZoneRoleData>&);
+	void OnReqCreateRole(const TcpConnectionPtr& , const std::shared_ptr<ReqCreateRole>&);
+	void OnRspCreateRole(const TcpConnectionPtr&, const std::shared_ptr<RspCreateRole>&);
+	void OnReqEnterGame(const TcpConnectionPtr&, const std::shared_ptr<ReqEnterGame>&);
+	void OnRspEnterGame(const TcpConnectionPtr&, const std::shared_ptr<RspEnterGame>&);
 	
 private:
-	std::map<int, ZoneServer> _zoneList;
+	std::map<int32_t, ZoneServer> _zoneList;
 };
 
 }

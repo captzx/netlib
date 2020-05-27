@@ -8,8 +8,8 @@
 
 using boost::asio::ip::tcp;
 using boost::asio::io_context;
-using SocketPtr = std::shared_ptr<tcp::socket>;
 using boost::system::error_code;
+
 using x::tool::NoCopyable;
 
 namespace x {
@@ -19,6 +19,7 @@ namespace net {
 class TcpConnection;
 using TcpConnectionPtr = std::shared_ptr<TcpConnection>;
 using TcpConnectionWeakPtr = std::weak_ptr<TcpConnection>;
+
 using MessageCallback = std::function<void(const TcpConnectionPtr&, Buffer&)>;
 using ConnectionCallback = std::function<void(const TcpConnectionPtr&)>;
 using CloseCallback = std::function<void(const TcpConnectionPtr&)>;
@@ -37,102 +38,121 @@ public:
 		Connected,
 		Disconnected
 	};
+
 public:
 	TcpConnection(tcp::socket);
 	~TcpConnection();
+
 public:
 	void OnEstablish();
 	void Disconnect();
 	void AsyncSend(const MessagePtr& pMessage);
 	void AsyncReceive();
-
 	bool IsConnectioned() { return _state == Connected; }
+
+private:
+	tcp::socket _sock;
+	Buffer _buf;
+public:
 	tcp::socket& GetSocket() { return _sock; }
 
-	unsigned int GetLastHeartBeatTime() { return _lastHeartBeat; }
-	void SetLastHeartBeatTime(unsigned int time) { _lastHeartBeat = time; }
-	unsigned int GetPid() { return _pid; }
-	std::string GetLocalEndpoint() { 
+public:
+	static int32_t Count;
+
+private:
+	State _state;
+	int32_t _id;
+	uint32_t _pid;
+	uint32_t _startTime;
+public:
+	std::string ToString() {
+		std::ostringstream oss;
+		if (_state == Connected) {
+			oss << "state: connected | id: " << _id << " | pid: " << _pid << " | establish time: " << _startTime
+				<< " | local: " << _sock.local_endpoint() << " | remote: " << _sock.remote_endpoint();
+		}
+		else oss << "connection not usable.";
+
+		return oss.str();
+	}
+	uint32_t GetPid() { return _pid; }
+	std::string GetLocalEndpoint() {
 		std::ostringstream oss;
 		oss << _sock.local_endpoint();
 		return oss.str();
 	}
-	unsigned int GetStartTime() { return _startTime; }
-	void SetID(int id) { _id = id; }
-	int GetID() { return _id; }
+	uint32_t GetStartTime() { return _startTime; }
+	void SetID(int32_t id) { _id = id; }
+	int32_t GetID() { return _id; }
 
-public:
-	void SetMessageCallback(MessageCallback callback) { _messageCallback = callback; }
-	void SetCloseCallback(CloseCallback callback) { _closeCallback = callback; }
-	
 private:
-	tcp::socket _sock;
-
-	int _id;
-	unsigned int _pid;
-	unsigned int _startTime;
-	State _state;
-
-	Buffer _buf;
-
-	unsigned int _lastHeartBeat;
+	uint32_t _lastHeartBeat;
+public:
+	uint32_t GetLastHeartBeatTime() { return _lastHeartBeat; }
+	void SetLastHeartBeatTime(uint32_t time) { _lastHeartBeat = time; }
 
 private:
 	MessageCallback _messageCallback;
 	CloseCallback _closeCallback;
-
 public:
-	static int Count;
+	void SetMessageCallback(MessageCallback callback) { _messageCallback = callback; }
+	void SetCloseCallback(CloseCallback callback) { _closeCallback = callback; }
 };
-using TcpConnectionManager = std::map<int, TcpConnectionPtr>;
+
+/// TcpConnectionManager
+class TcpConnectionManager {
+public:
+	TcpConnectionManager() {}
+	~TcpConnectionManager() {}
+
+private:
+	std::map<int32_t, TcpConnectionPtr> _connections;
+public:
+	void Add(TcpConnectionPtr pConn);
+	std::map<int32_t, TcpConnectionPtr>& GetAll() { return _connections; }
+	uint32_t GetConnectedCount() { return _connections.size(); }
+	void RemoveConnection(const TcpConnectionPtr& pConnection);
+	void CloseAllConnection();
+};
 
 /// TcpService
 class TcpService {
 public:
 	explicit TcpService(std::string);
 
-public:
-	void AsyncListen(unsigned int);
-	TcpConnectionPtr AsyncConnect(std::string ip, unsigned int port);
+private:
+	std::string _name;
 
-	void RemovePassiveConnection(const TcpConnectionPtr&);
-	void RemoveActiveConnection(const TcpConnectionPtr&);
-	
-	void SetMessageCallback(MessageCallback callback) {
-		_messageCallback = callback;
-	}
-	void SetAtvConnCallback(ConnectionCallback callback) {
-		_atvConnCallback = callback;
-	}
-	void SetPsvConnCallback(ConnectionCallback callback) {
-		_psvConnCallback = callback;
-	}
+	io_context _io_context;
+	tcp::acceptor _acceptor;
+	std::thread _io_thread;
+
+	TcpConnectionManager _atvConnMgr;
+	TcpConnectionManager _psvConnMgr;
+public:
+	io_context& GetIOContext() { return _io_context; }
+
+	void AsyncListen(uint32_t);
+	TcpConnectionPtr AsyncConnect(std::string ip, uint32_t port);
 
 	void Start();
 	void Close();
+
+	TcpConnectionManager& GetAtvConnMgr() { return _atvConnMgr; }
+	TcpConnectionManager& GetPsvConnMgr() { return _psvConnMgr; }
+
 private:
-	void AsyncHeartBeatInLoop();
-	void AsyncListenInLoop();
-
-public:
-	unsigned int GetActiveConnectCount() { return _activeConnections.size(); }
-	unsigned int GetPassiveConnectCount() { return _passiveConnections.size(); }
-	TcpConnectionManager& GetActiveConnectionMgr() { return _activeConnections; }
-	TcpConnectionManager& GetPassiveConnectionMgr() { return _passiveConnections; }
-	io_context& GetIOContext() { return _io_context; }
-private:
-	std::string _name;
-	io_context _io_context;
-	tcp::acceptor _acceptor;
-
-	TcpConnectionManager _activeConnections;
-	TcpConnectionManager _passiveConnections;
-
 	MessageCallback _messageCallback;
 	ConnectionCallback _atvConnCallback;
 	ConnectionCallback _psvConnCallback;
+public:
+	void SetMessageCallback(MessageCallback callback) { _messageCallback = callback; }
+	void SetAtvConnCallback(ConnectionCallback callback) { _atvConnCallback = callback;	}
+	void SetPsvConnCallback(ConnectionCallback callback) { _psvConnCallback = callback; }
 
-	std::thread _io_thread;
+private:
+	void AsyncHeartBeatInLoop();
+	void AsyncListenInLoop();
 };
 using TcpServicePtr = std::shared_ptr<TcpService>;
 

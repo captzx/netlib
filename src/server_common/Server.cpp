@@ -4,16 +4,18 @@ using namespace x;
 
 /// Server
 Server::Server() :
-	_dispatcher(std::bind(&Server::DefaultMessageCallback, this, std::placeholders::_1, std::placeholders::_2)),
-	_codec(std::bind(&ProtobufDispatcher::RecvMessage, &_dispatcher, std::placeholders::_1, std::placeholders::_2)) {
+	_dispatcher(std::bind(&Server::DefaultMessageCallback, this, _1, _2)),
+	_codec(std::bind(&ProtobufDispatcher::RecvMessage, &_dispatcher, _1, _2)) {
 	_heartbeatPeriod = 3;
-	_dispatcher.RegisterMessageCallback<ActiveHeartBeat>(std::bind(&Server::OnActiveHeartBeat, this, std::placeholders::_1, std::placeholders::_2));
-	_dispatcher.RegisterMessageCallback<PassiveHeartBeat>(std::bind(&Server::OnPassiveHeartBeat, this, std::placeholders::_1, std::placeholders::_2));
-	_dispatcher.RegisterMessageCallback<ActiveConnection>(std::bind(&Server::OnActiveConnection, this, std::placeholders::_1, std::placeholders::_2));
+
+	GET_MESSAGE_DISPATCHER(_dispatcher)
+	REGISTER_MESSAGE_CALL_BACK(Server, this, ActiveHeartBeat);
+	REGISTER_MESSAGE_CALL_BACK(Server, this, PassiveHeartBeat);
+	REGISTER_MESSAGE_CALL_BACK(Server, this, ActiveConnection);
 }
 
-void Server::Start(unsigned int id) {
-	_pSvrCfg = GlobalConfig::GetInstance().GetServerCfgByType({ static_cast<unsigned int>(GetServerType()), id });
+void Server::Start(uint32_t id) {
+	_pSvrCfg = GlobalConfig::GetInstance().GetServerCfgByType({ static_cast<uint32_t>(GetServerType()), id });
 	if (!_pSvrCfg) {
 		std::cout << "start Server failure, error code: config missing.";
 		return;
@@ -28,9 +30,9 @@ void Server::Start(unsigned int id) {
 	}
 
 	_pTcpService = std::make_shared<TcpService>(_pSvrCfg->Name);
-	_pTcpService->SetMessageCallback(std::bind(&ProtobufCodec::RecvMessage, &_codec, std::placeholders::_1, std::placeholders::_2));
-	_pTcpService->SetAtvConnCallback(std::bind(&Server::OnAtvConnection, this, std::placeholders::_1));
-	_pTcpService->SetPsvConnCallback(std::bind(&Server::OnPsvConnection, this, std::placeholders::_1));
+	_pTcpService->SetMessageCallback(std::bind(&ProtobufCodec::RecvMessage, &_codec, _1, _2));
+	_pTcpService->SetAtvConnCallback(std::bind(&Server::OnAtvConnection, this, _1));
+	_pTcpService->SetPsvConnCallback(std::bind(&Server::OnPsvConnection, this, _1));
 	for (auto svr : _pSvrCfg->ConnectSvrCfgs) {
 		auto pSvrCfg = GlobalConfig::GetInstance().GetServerCfgByType({ svr.Type, svr.ID });
 		if (pSvrCfg) _connections[{svr.Type, svr.ID}] = _pTcpService->AsyncConnect(pSvrCfg->IP, pSvrCfg->Port);
@@ -52,35 +54,36 @@ void Server::DefaultMessageCallback(const TcpConnectionPtr&, const MessagePtr&) 
 	log(debug, _pSvrCfg->Name) << "Server default message call back.";
 }
 
-void Server::OnAtvConnection(const TcpConnectionPtr& pConnection) {
-	auto pMsg = std::make_shared<ActiveConnection>();
-	if (pMsg) {
-		pMsg->set_type(_pSvrCfg->Type);
-		pMsg->set_id(_pSvrCfg->ID);
+void Server::OnAtvConnection(const TcpConnectionPtr& pConn) {
+	auto pSend = std::make_shared<ActiveConnection>();
+	if (pSend) {
+		pSend->set_type(_pSvrCfg->Type);
+		pSend->set_id(_pSvrCfg->ID);
 
-		pConnection->AsyncSend(pMsg);
+		pConn->AsyncSend(pSend);
 	}
 }
 void Server::OnPsvConnection(const TcpConnectionPtr&) {
 	log(debug, _pSvrCfg->Name) << "on Connection.";
 }
 void Server::CheckHeartBeat() {
-	unsigned int now = Now::Second();
-	TcpConnectionManager& passiveConnections = _pTcpService->GetPassiveConnectionMgr();
-	for (auto it = passiveConnections.begin(); it != passiveConnections.end();) {
-		const TcpConnectionPtr& pConnection = it->second;
-		if (pConnection) {
-			unsigned int last = pConnection->GetLastHeartBeatTime();
+	uint32_t now = Now::Second();
+
+	std::map<int32_t, TcpConnectionPtr>& psvConns = _pTcpService->GetPsvConnMgr().GetAll();
+	for (auto it = psvConns.begin(); it != psvConns.end();) {
+		const TcpConnectionPtr& pConn = it->second;
+		if (pConn) {
+			uint32_t last = pConn->GetLastHeartBeatTime();
 			if (now > last + _heartbeatPeriod * 2) {
-				if (pConnection->IsConnectioned()) {
-					pConnection->Disconnect();
+				if (pConn->IsConnectioned()) {
+					pConn->Disconnect();
 				}
 			}
 			else {
-				auto pMsg = std::make_shared<ActiveHeartBeat>();
-				if (pMsg) {
-					pMsg->set_last_hb_time(now);
-					pConnection->AsyncSend(pMsg);
+				auto pSend = std::make_shared<ActiveHeartBeat>();
+				if (pSend) {
+					pSend->set_last_hb_time(now);
+					pConn->AsyncSend(pSend);
 				}
 
 				++it;
@@ -90,35 +93,35 @@ void Server::CheckHeartBeat() {
 }
 
 
-void Server::OnPassiveHeartBeat(const TcpConnectionPtr& pConnection, const std::shared_ptr<PassiveHeartBeat>& pMsg) {
-	pConnection->SetLastHeartBeatTime(pMsg->last_hb_time());
+void Server::OnPassiveHeartBeat(const TcpConnectionPtr& pConn, const std::shared_ptr<PassiveHeartBeat>& pRecv) {
+	pConn->SetLastHeartBeatTime(pRecv->last_hb_time());
 
-	log(trivial, _pSvrCfg->Name) << pMsg->address() << ":" << pMsg->cnt_start_time() << ":" << pMsg->pid()
-		<< " active count: " << pMsg->atv_count() << " passive count: " << pMsg->psv_count();
+	log(trivial, _pSvrCfg->Name) << pRecv->address() << ":" << pRecv->cnt_start_time() << ":" << pRecv->pid()
+		<< " active count: " << pRecv->atv_count() << " passive count: " << pRecv->psv_count();
 }
 
-void Server::OnActiveHeartBeat(const TcpConnectionPtr& pConnection, const std::shared_ptr<ActiveHeartBeat>& pMsg) {
-	pConnection->SetLastHeartBeatTime(pMsg->last_hb_time());
+void Server::OnActiveHeartBeat(const TcpConnectionPtr& pConn, const std::shared_ptr<ActiveHeartBeat>& pRecv) {
+	pConn->SetLastHeartBeatTime(pRecv->last_hb_time());
 
 	CheckHeartBeat();
 
-	if (pConnection->IsConnectioned()) {
-		auto pMsg = std::make_shared<PassiveHeartBeat>();
-		if (pMsg) {
-			pMsg->set_last_hb_time(pConnection->GetLastHeartBeatTime());
-			pMsg->set_cnt_start_time(pConnection->GetStartTime());
-			pMsg->set_address(pConnection->GetLocalEndpoint());
-			pMsg->set_pid(pConnection->GetPid());
-			pMsg->set_atv_count(_pTcpService->GetActiveConnectCount());
-			pMsg->set_psv_count(_pTcpService->GetPassiveConnectCount());
+	if (pConn->IsConnectioned()) {
+		auto pSend = std::make_shared<PassiveHeartBeat>();
+		if (pSend) {
+			pSend->set_last_hb_time(pConn->GetLastHeartBeatTime());
+			pSend->set_cnt_start_time(pConn->GetStartTime());
+			pSend->set_address(pConn->GetLocalEndpoint());
+			pSend->set_pid(pConn->GetPid());
+			pSend->set_atv_count(_pTcpService->GetAtvConnMgr().GetConnectedCount());
+			pSend->set_psv_count(_pTcpService->GetPsvConnMgr().GetConnectedCount());
 
-			pConnection->AsyncSend(pMsg);
+			pConn->AsyncSend(pSend);
 		}
 	}
 }
 
-void Server::OnActiveConnection(const TcpConnectionPtr& pConnection, const std::shared_ptr<ActiveConnection>& pMsg) {
-	_connections[{pMsg->type(), pMsg->id()}] = pConnection;
+void Server::OnActiveConnection(const TcpConnectionPtr& pConn, const std::shared_ptr<ActiveConnection>& pRecv) {
+	_connections[{pRecv->type(), pRecv->id()}] = pConn;
 
-	log(debug, _pSvrCfg->Name) << "OnActiveConnection {pMsg, svr.ID}: " << pMsg->type() << " " << pMsg->id();
+	log(debug, _pSvrCfg->Name) << "OnActiveConnection {pRecv, svr.ID}: " << pRecv->type() << " " << pRecv->id();
 }

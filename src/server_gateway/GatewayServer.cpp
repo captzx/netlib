@@ -8,24 +8,22 @@ GatewayServer::GatewayServer(){
 }
 
 void GatewayServer::InitModule() {
-	ProtobufDispatcher& dispatcher = GatewayServer::GetInstance().GetDispatcher();
-	dispatcher.RegisterMessageCallback<RequestZoneRoleData>(std::bind(&GatewayServer::OnRequestZoneRoleData, this, std::placeholders::_1, std::placeholders::_2));
-	dispatcher.RegisterMessageCallback<ResponseZoneRoleData>(std::bind(&GatewayServer::OnResponseZoneRoleData, this, std::placeholders::_1, std::placeholders::_2));
-	dispatcher.RegisterMessageCallback<ReqCreateRole>(std::bind(&GatewayServer::OnReqCreateRole, this, std::placeholders::_1, std::placeholders::_2));
-	dispatcher.RegisterMessageCallback<RspCreateRole>(std::bind(&GatewayServer::OnRspCreateRole, this, std::placeholders::_1, std::placeholders::_2));
-	dispatcher.RegisterMessageCallback<ReqEnterGame>(std::bind(&GatewayServer::OnReqEnterGame, this, std::placeholders::_1, std::placeholders::_2));
-	dispatcher.RegisterMessageCallback<LoginIntoScene>(std::bind(&GatewayServer::OnLoginIntoScene, this, std::placeholders::_1, std::placeholders::_2));
-	
-	
+	GET_MESSAGE_DISPATCHER(GatewayServer::GetInstance().GetDispatcher());
+	REGISTER_MESSAGE_CALL_BACK(GatewayServer, this, ReqZoneRoleData);
+	REGISTER_MESSAGE_CALL_BACK(GatewayServer, this, RspZoneRoleData);
+	REGISTER_MESSAGE_CALL_BACK(GatewayServer, this, ReqCreateRole);
+	REGISTER_MESSAGE_CALL_BACK(GatewayServer, this, RspCreateRole);
+	REGISTER_MESSAGE_CALL_BACK(GatewayServer, this, ReqEnterGame);
+	REGISTER_MESSAGE_CALL_BACK(GatewayServer, this, LoginIntoScene);
 }
 
 
-void GatewayServer::OnRequestZoneRoleData(const TcpConnectionPtr&, const std::shared_ptr<RequestZoneRoleData>& pRecv) {
+void GatewayServer::OnReqZoneRoleData(const TcpConnectionPtr&, const std::shared_ptr<ReqZoneRoleData>& pRecv) {
 	ForwardToData(1, pRecv);
 }
 
 
-void GatewayServer::OnResponseZoneRoleData(const TcpConnectionPtr&, const std::shared_ptr<ResponseZoneRoleData>& pRecv) {
+void GatewayServer::OnRspZoneRoleData(const TcpConnectionPtr&, const std::shared_ptr<RspZoneRoleData>& pRecv) {
 	ForwardToLogin(pRecv->svr_id(), pRecv);
 }
 void GatewayServer::OnReqCreateRole(const TcpConnectionPtr&, const std::shared_ptr<ReqCreateRole>& pRecv) {
@@ -48,8 +46,8 @@ void GatewayServer::OnLoginIntoScene(const TcpConnectionPtr&, const std::shared_
 	ForwardToLogin(1, pSend);
 }
 
-void GatewayServer::ForwardToLogin(unsigned int svr_id, const MessagePtr& pMsg) {
-	auto it = _connections.find({ (unsigned int)ServerType::LOGIN, svr_id });
+void GatewayServer::ForwardToLogin(uint32_t svr_id, const MessagePtr& pMsg) {
+	auto it = _connections.find({ (uint32_t)ServerType::LOGIN, svr_id });
 	if (it != _connections.end() && !it->second.expired()) {
 		TcpConnectionPtr pConnection = it->second.lock();
 		pConnection->AsyncSend(pMsg);
@@ -58,8 +56,8 @@ void GatewayServer::ForwardToLogin(unsigned int svr_id, const MessagePtr& pMsg) 
 	log(debug, "GatewayServer") << "forward message to login, msg = " << pMsg->GetTypeName();
 }
 
-void GatewayServer::ForwardToData(unsigned int svr_id, const MessagePtr& pMsg) {
-	auto it = _connections.find({ (unsigned int)ServerType::DATA, svr_id });
+void GatewayServer::ForwardToData(uint32_t svr_id, const MessagePtr& pMsg) {
+	auto it = _connections.find({ (uint32_t)ServerType::DATA, svr_id });
 	if (it != _connections.end() && !it->second.expired()) {
 		TcpConnectionPtr pConnection = it->second.lock();
 		pConnection->AsyncSend(pMsg);
@@ -68,8 +66,8 @@ void GatewayServer::ForwardToData(unsigned int svr_id, const MessagePtr& pMsg) {
 	log(debug, "GatewayServer") << "forward message to data, msg = " << pMsg->GetTypeName();
 }
 
-void GatewayServer::ForwardToScene(unsigned int svr_id, const MessagePtr& pMsg) {
-	auto it = _connections.find({ (unsigned int)ServerType::SCENE, svr_id });
+void GatewayServer::ForwardToScene(uint32_t svr_id, const MessagePtr& pMsg) {
+	auto it = _connections.find({ (uint32_t)ServerType::SCENE, svr_id });
 	if (it != _connections.end() && !it->second.expired()) {
 		TcpConnectionPtr pConnection = it->second.lock();
 		pConnection->AsyncSend(pMsg);
@@ -78,7 +76,7 @@ void GatewayServer::ForwardToScene(unsigned int svr_id, const MessagePtr& pMsg) 
 	log(debug, "GatewayServer") << "forward message to scene, msg = " << pMsg->GetTypeName();
 }
 
-int main(int argc, char* argv[]) {
+int32_t main(int32_t argc, char* argv[]) {
 	if (argc != 2)  std::cout << "Usage: " << argv[0] << " id\n";
 
 	GlobalConfig::GetInstance().LoadFile("config.xml");

@@ -16,17 +16,17 @@ namespace gateway {
 		virtual ~GatewayServer() { }
 
 	public:
-		virtual void InitModule() override;
 		virtual ServerType GetServerType() override { return ServerType::GATEWAY; }
+		virtual void InitModule() override;
 
 	public:
 
-		void ForwardToLogin(unsigned int svr_id, const MessagePtr& pMsg);
-		void ForwardToData(unsigned int svr_id, const MessagePtr& pMsg);
-		void ForwardToScene(unsigned int svr_id, const MessagePtr& pMsg);
+		void ForwardToLogin(uint32_t svr_id, const MessagePtr&);
+		void ForwardToData(uint32_t svr_id, const MessagePtr&);
+		void ForwardToScene(uint32_t svr_id, const MessagePtr&);
 
-		void OnRequestZoneRoleData(const TcpConnectionPtr&, const std::shared_ptr<RequestZoneRoleData>&);
-		void OnResponseZoneRoleData(const TcpConnectionPtr&, const std::shared_ptr<ResponseZoneRoleData>&);
+		void OnReqZoneRoleData(const TcpConnectionPtr&, const std::shared_ptr<ReqZoneRoleData>&);
+		void OnRspZoneRoleData(const TcpConnectionPtr&, const std::shared_ptr<RspZoneRoleData>&);
 		void OnReqCreateRole(const TcpConnectionPtr&, const std::shared_ptr<ReqCreateRole>&);
 		void OnRspCreateRole(const TcpConnectionPtr&, const std::shared_ptr<RspCreateRole>&);
 		void OnReqEnterGame(const TcpConnectionPtr&, const std::shared_ptr<ReqEnterGame>&);

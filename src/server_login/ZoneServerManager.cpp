@@ -2,23 +2,16 @@
 
 #include "LoginUserManager.h"
 
-using namespace x::net;
-using namespace x::tool;
-
 using namespace x::login;
-using namespace mysqlx;
 
 void ZoneServerManager::RegisterMessageCallback() {
-	ProtobufDispatcher& dispatcher = LoginServer::GetInstance().GetDispatcher();
-
-	dispatcher.RegisterMessageCallback<SelectZoneServer>(std::bind(&ZoneServerManager::OnSelectZoneServer, this, std::placeholders::_1, std::placeholders::_2));
-	dispatcher.RegisterMessageCallback<ResponseZoneRoleData>(std::bind(&ZoneServerManager::OnResponseZoneRoleData, this, std::placeholders::_1, std::placeholders::_2));
-	dispatcher.RegisterMessageCallback<ReqCreateRole>(std::bind(&ZoneServerManager::OnReqCreateRole, this, std::placeholders::_1, std::placeholders::_2));
-	dispatcher.RegisterMessageCallback<RspCreateRole>(std::bind(&ZoneServerManager::OnRspCreateRole, this, std::placeholders::_1, std::placeholders::_2));
-	dispatcher.RegisterMessageCallback<ReqEnterGame>(std::bind(&ZoneServerManager::OnReqEnterGame, this, std::placeholders::_1, std::placeholders::_2));
-	dispatcher.RegisterMessageCallback<RspEnterGame>(std::bind(&ZoneServerManager::OnRspEnterGame, this, std::placeholders::_1, std::placeholders::_2));
-	
-	
+	GET_MESSAGE_DISPATCHER(LoginServer::GetInstance().GetDispatcher());
+	REGISTER_MESSAGE_CALL_BACK(ZoneServerManager, this, SelectZoneServer);
+	REGISTER_MESSAGE_CALL_BACK(ZoneServerManager, this, RspZoneRoleData);
+	REGISTER_MESSAGE_CALL_BACK(ZoneServerManager, this, ReqCreateRole);
+	REGISTER_MESSAGE_CALL_BACK(ZoneServerManager, this, RspCreateRole);
+	REGISTER_MESSAGE_CALL_BACK(ZoneServerManager, this, ReqEnterGame);
+	REGISTER_MESSAGE_CALL_BACK(ZoneServerManager, this, RspEnterGame);
 }
 
 bool ZoneServerManager::InitServerList() {
@@ -27,17 +20,17 @@ bool ZoneServerManager::InitServerList() {
 	oss << "select * from x_login.serverlist;";
 
 	DBServicePtr& pDBService = LoginServer::GetInstance().GetDBService();
-	SqlResult result = pDBService->GetDBConnectionByType((unsigned int)DBType::x_login)->ExecuteSql(oss.str());
+	SqlResult result = pDBService->GetDBConnectionByType((uint32_t)DBType::x_login)->ExecuteSql(oss.str());
 	for (size_t i = 0; i < result.count(); ++i) {
 		Row row = result.fetchOne();
 		assert(!row.isNull());
 
 		ZoneServer zone;
-		zone.id = static_cast<int>(row.get(0));
+		zone.id = static_cast<int32_t>(row.get(0));
 		zone.name = static_cast<std::string>(row.get(1));
 		zone.ip = static_cast<std::string>(row.get(2));
-		zone.port = static_cast<unsigned int>(row.get(3));
-		zone.state = static_cast<unsigned int>(row.get(4));
+		zone.port = static_cast<uint32_t>(row.get(3));
+		zone.state = static_cast<uint32_t>(row.get(4));
 
 		zone.wpConnection = LoginServer::GetInstance().GetTcpService()->AsyncConnect(zone.ip, zone.port); // connect gateway
 
@@ -52,7 +45,7 @@ bool ZoneServerManager::InitServerList() {
 	return true;
 }
 
-bool ZoneServerManager::SendAllZoneList(const TcpConnectionPtr& pConnection) {
+bool ZoneServerManager::SendAllZoneList(const TcpConnectionPtr& pConn) {
 	auto pMsg = std::make_shared<ReturnZoneList>();
 	if (pMsg) {
 		for (auto it : _zoneList) {
@@ -67,37 +60,37 @@ bool ZoneServerManager::SendAllZoneList(const TcpConnectionPtr& pConnection) {
 			}
 		}
 
-		pConnection->AsyncSend(pMsg);
+		pConn->AsyncSend(pMsg);
 	}
 
 	return true;
 	
 }
 
-void ZoneServerManager::OnResponseZoneRoleData(const TcpConnectionPtr&, const std::shared_ptr<ResponseZoneRoleData>& pRecv) {
+void ZoneServerManager::OnRspZoneRoleData(const TcpConnectionPtr&, const std::shared_ptr<RspZoneRoleData>& pRecv) {
 	std::shared_ptr<LoginUser> pUser = LoginUserManager::GetInstance().FindUser(pRecv->act_id());
 	if (pUser && !pUser->GetConnection().expired()) {
-		TcpConnectionPtr pConnection = pUser->GetConnection().lock();
+		TcpConnectionPtr pConn = pUser->GetConnection().lock();
 
 		auto address = pUser->GetZoneAddress();
 		pRecv->set_ip(address.first);
 		pRecv->set_port(address.second);
-		pConnection->AsyncSend(pRecv);
+		pConn->AsyncSend(pRecv);
 	}
-	log(warning, "ZoneServerManager") << "OnResponseZoneRoleData";
+	log(warning, "ZoneServerManager") << "OnRspZoneRoleData";
 }
-void ZoneServerManager::OnSelectZoneServer(const TcpConnectionPtr& pConnection, const std::shared_ptr<SelectZoneServer>& pRecv) {
+void ZoneServerManager::OnSelectZoneServer(const TcpConnectionPtr& pConn, const std::shared_ptr<SelectZoneServer>& pRecv) {
 	auto it = _zoneList.find(pRecv->zone_id());
 	if (it != _zoneList.end() && !it->second.wpConnection.expired()) {
 		TcpConnectionPtr pToGateWay = it->second.wpConnection.lock();
-		auto pSend = std::make_shared<RequestZoneRoleData>();
+		auto pSend = std::make_shared<ReqZoneRoleData>();
 		if (pSend) {
 			pSend->set_svr_id(1); // 1
 			pSend->set_act_id(pRecv->act_id());
 
 			pToGateWay->AsyncSend(pSend);
 
-			log(warning, "ZoneServerManager") << "async send RequestZoneRoleData, act_id = " << pSend->act_id();
+			log(warning, "ZoneServerManager") << "async send ReqZoneRoleData, act_id = " << pSend->act_id();
 		}
 
 		std::shared_ptr<LoginUser> pUser = LoginUserManager::GetInstance().FindUser(pRecv->act_id());
@@ -105,7 +98,7 @@ void ZoneServerManager::OnSelectZoneServer(const TcpConnectionPtr& pConnection, 
 	}
 }
 
-void ZoneServerManager::OnReqCreateRole(const TcpConnectionPtr& pConnection, const std::shared_ptr<ReqCreateRole>& pRecv) {
+void ZoneServerManager::OnReqCreateRole(const TcpConnectionPtr& pConn, const std::shared_ptr<ReqCreateRole>& pRecv) {
 	auto it = _zoneList.find(pRecv->zone_id());
 	if (it != _zoneList.end() && !it->second.wpConnection.expired()) {
 		TcpConnectionPtr pToGateWay = it->second.wpConnection.lock();
@@ -115,16 +108,16 @@ void ZoneServerManager::OnReqCreateRole(const TcpConnectionPtr& pConnection, con
 	}
 }
 
-void ZoneServerManager::OnRspCreateRole(const TcpConnectionPtr& pConnection, const std::shared_ptr<RspCreateRole>& pRecv) {
+void ZoneServerManager::OnRspCreateRole(const TcpConnectionPtr& pConn, const std::shared_ptr<RspCreateRole>& pRecv) {
 	std::shared_ptr<LoginUser> pUser = LoginUserManager::GetInstance().FindUser(pRecv->act_id());
 	if (pUser && !pUser->GetConnection().expired()) {
-		TcpConnectionPtr pConnection = pUser->GetConnection().lock();
-		pConnection->AsyncSend(pRecv);
+		TcpConnectionPtr pConn = pUser->GetConnection().lock();
+		pConn->AsyncSend(pRecv);
 	}
 }
 
 
-void ZoneServerManager::OnReqEnterGame(const TcpConnectionPtr& pConnection, const std::shared_ptr<ReqEnterGame>& pRecv) {
+void ZoneServerManager::OnReqEnterGame(const TcpConnectionPtr& pConn, const std::shared_ptr<ReqEnterGame>& pRecv) {
 	auto it = _zoneList.find(1);
 	if (it != _zoneList.end() && !it->second.wpConnection.expired()) {
 		TcpConnectionPtr pToGateWay = it->second.wpConnection.lock();
@@ -132,6 +125,6 @@ void ZoneServerManager::OnReqEnterGame(const TcpConnectionPtr& pConnection, cons
 	}
 }
 
-void ZoneServerManager::OnRspEnterGame(const TcpConnectionPtr& pConnection, const std::shared_ptr<RspEnterGame>& pRecv) {
+void ZoneServerManager::OnRspEnterGame(const TcpConnectionPtr& pConn, const std::shared_ptr<RspEnterGame>& pRecv) {
 	log(warning, "ZoneServerManager") << "todo: OnRspEnterGame";
 }

@@ -16,16 +16,16 @@ namespace data {
 		virtual ~DataServer() { }
 
 	public:
-		virtual void InitModule() override;
 		virtual ServerType GetServerType() override { return ServerType::DATA; }
+		virtual void InitModule() override;
 
 	public:
-		void OnRequestZoneRoleData(const TcpConnectionPtr&, const std::shared_ptr<RequestZoneRoleData>&);
+		void OnReqZoneRoleData(const TcpConnectionPtr&, const std::shared_ptr<ReqZoneRoleData>&);
 		void OnReqCreateRole(const TcpConnectionPtr&, const std::shared_ptr<ReqCreateRole>&);
 		void OnReqEnterGame(const TcpConnectionPtr&, const std::shared_ptr<ReqEnterGame>&);
 		
 	private:
-		unsigned int _rolecount;
+		uint32_t _rolecount;
 	};
 
 } // namespace data

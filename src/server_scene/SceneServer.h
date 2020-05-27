@@ -14,8 +14,8 @@ namespace scene {
 		virtual ~SceneServer() { }
 
 	public:
-		virtual void InitModule() override;
 		virtual ServerType GetServerType() override { return ServerType::SCENE; }
+		virtual void InitModule() override;
 
 	public:
 		void OnLoginIntoScene(const TcpConnectionPtr&, const std::shared_ptr<LoginIntoScene>&);

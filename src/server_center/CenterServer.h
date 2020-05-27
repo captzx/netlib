@@ -14,8 +14,8 @@ namespace center {
 		virtual ~CenterServer() { }
 
 	public:
-		virtual void InitModule() override;
 		virtual ServerType GetServerType() override { return ServerType::CENTER; }
+		virtual void InitModule() override;
 	};
 
 } // namespace center

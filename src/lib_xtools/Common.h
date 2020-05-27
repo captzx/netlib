@@ -15,6 +15,9 @@
 #include <memory>
 
 #include <functional> // function/bind
+using std::placeholders::_1;
+using std::placeholders::_2;
+using std::placeholders::_3;
 
 #include <thread>
 #include <mutex>

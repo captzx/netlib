@@ -11,17 +11,17 @@ public:
 	UuidGenerator();
 
 public:
-	void Init(long worker, long type, long seq = 0L);
-	ull Get();
+	void Init(int32_t worker, int32_t type, int32_t seq = 0L);
+	uint64_t Get();
 
 private:
-	ull WaitToNextMillis(const ull last_time);
+	uint64_t WaitToNextMillis(const uint64_t last_time);
 
 private:
-	long _worker;
-	long _type;
-	long _seq;
-	ull _last_time;
+	int32_t _worker;
+	int32_t _type;
+	int32_t _seq;
+	uint64_t _last_time;
 };
 
 }

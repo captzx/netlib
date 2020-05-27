@@ -11,22 +11,21 @@ using namespace x::net;
 
 namespace x {
 
-/// class SupervisorServer
-	class Server {
-	public:
-		Server();
-		virtual ~Server() {}
+class Server {
+public:
+	Server();
+	virtual ~Server() {}
 
-	public:
-		virtual void Start(unsigned int id) final;
+public:
+	virtual void Start(uint32_t id) final;
 
-		virtual ProtobufDispatcher& GetDispatcher() final { return _dispatcher; }
-		virtual ProtobufCodec& GetCodec() final { return _codec; }
-		virtual TcpServicePtr& GetTcpService() final { return _pTcpService; }
-		virtual DBServicePtr& GetDBService() final { return _pDBService; }
+	virtual ProtobufDispatcher& GetDispatcher() final { return _dispatcher; }
+	virtual ProtobufCodec& GetCodec() final { return _codec; }
+	virtual TcpServicePtr& GetTcpService() final { return _pTcpService; }
+	virtual DBServicePtr& GetDBService() final { return _pDBService; }
 
-		virtual void InitModule() = 0;
-		virtual ServerType GetServerType() = 0;
+	virtual void InitModule() = 0;
+	virtual ServerType GetServerType() = 0;
 
 public:
 	void DefaultMessageCallback(const TcpConnectionPtr&, const MessagePtr&);
@@ -41,13 +40,13 @@ public:
 	void CheckHeartBeat();
 
 public:
-	unsigned int GetStartTime() { return _startTime; }
+	uint32_t GetStartTime() { return _startTime; }
 
 public:
 	static ServerType TYPE;
 
 protected:
-	unsigned int _startTime;
+	uint32_t _startTime;
 	ServerCfg* _pSvrCfg;
 
 	TcpServicePtr _pTcpService;
@@ -56,9 +55,9 @@ protected:
 	ProtobufDispatcher _dispatcher;
 	ProtobufCodec _codec;
 
-	unsigned int _heartbeatPeriod;
+	uint32_t _heartbeatPeriod;
 
-	std::map<std::pair<unsigned int, unsigned int>, TcpConnectionWeakPtr> _connections; // { type, id } -> connection
+	std::map<std::pair<uint32_t, uint32_t>, TcpConnectionWeakPtr> _connections; // { type, id } -> connection
 };
 
 } // namespace x

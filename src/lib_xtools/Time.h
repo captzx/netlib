@@ -8,8 +8,8 @@ namespace tool {
 
 class Now {
 public:
-	static unsigned int Second();
-	static ull MilliSecond();
+	static uint32_t Second();
+	static uint64_t MilliSecond();
 };
 
 }

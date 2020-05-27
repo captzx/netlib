@@ -27,6 +27,7 @@ public:
 	ProtobufCodec(const ProtobufMessageCallback& callback) {
 		_messageCallback = callback;
 	}
+
 public:
 	static bool PackMessage(const MessagePtr&, Buffer&);
 	static MessagePtr CreateMessageByName(const std::string&);
@@ -54,10 +55,11 @@ private:
 public:
 	using CallbackType = std::function<void(const TcpConnectionPtr&, const std::shared_ptr<T>&)>;
 
-	ProtobufMessageCallbackT(const CallbackType& callback) : _callback(callback)
-	{
+	ProtobufMessageCallbackT(const CallbackType& callback) : _callback(callback){
+
 	}
 
+public:
 	void OnMessage(const TcpConnectionPtr& pConnection, const MessagePtr& pMessagee) const override {
 		std::shared_ptr<T> pTMessage = std::dynamic_pointer_cast<T>(pMessagee);
 
@@ -86,10 +88,14 @@ public:
 	}
 
 private:
+	ProtobufMessageCallback _defaultCallback;
+
 	using ProtobufMessageCallbackMap = std::map<const Descriptor*, std::shared_ptr<Callback>>;
 	ProtobufMessageCallbackMap _callbacks;
-	ProtobufMessageCallback _defaultCallback;
 };
+
+#define GET_MESSAGE_DISPATCHER(D) ProtobufDispatcher& dispatcher = D;
+#define REGISTER_MESSAGE_CALL_BACK(Module, pObj, Msg) dispatcher.RegisterMessageCallback<Msg>(std::bind(&Module::On##Msg, pObj, _1, _2));
 
 }
 

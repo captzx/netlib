@@ -8,8 +8,8 @@ SceneServer::SceneServer(){
 }
 
 void SceneServer::InitModule() {
-	ProtobufDispatcher& dispatcher = SceneServer::GetInstance().GetDispatcher();
-	dispatcher.RegisterMessageCallback<LoginIntoScene>(std::bind(&SceneServer::OnLoginIntoScene, this, std::placeholders::_1, std::placeholders::_2));
+	GET_MESSAGE_DISPATCHER(SceneServer::GetInstance().GetDispatcher());
+	REGISTER_MESSAGE_CALL_BACK(SceneServer, this, LoginIntoScene);
 	
 }
 
@@ -18,7 +18,7 @@ void SceneServer::OnLoginIntoScene(const TcpConnectionPtr& pConn, const std::sha
 }
 
 
-int main(int argc, char* argv[]) {
+int32_t main(int32_t argc, char* argv[]) {
 	if (argc != 2)  std::cout << "Usage: " << argv[0] << " id\n";
 
 	GlobalConfig::GetInstance().LoadFile("config.xml");

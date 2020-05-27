@@ -13,29 +13,29 @@ using namespace x::net;
 class TestClient {
 public:
 	explicit TestClient(std::string name) :
-		_dispatcher(std::bind(&TestClient::DefaultMessageCallback, this, std::placeholders::_1, std::placeholders::_2)),
-		_codec(std::bind(&ProtobufDispatcher::RecvMessage, &_dispatcher, std::placeholders::_1, std::placeholders::_2)) {
+		_dispatcher(std::bind(&TestClient::DefaultMessageCallback, this, _1, _2)),
+		_codec(std::bind(&ProtobufDispatcher::RecvMessage, &_dispatcher, _1, _2)) {
 
 		_pTcpService = std::make_shared<TcpService>(name);
 
-		_dispatcher.RegisterMessageCallback<ActiveHeartBeat>(std::bind(&TestClient::OnActiveHeartBeat, this, std::placeholders::_1, std::placeholders::_2));
-		_dispatcher.RegisterMessageCallback<ResponseRsaPublicKey>(std::bind(&TestClient::OnResponseRsaPublicKey, this, std::placeholders::_1, std::placeholders::_2));
-		_dispatcher.RegisterMessageCallback<RegisterResult>(std::bind(&TestClient::OnRegisterResult, this, std::placeholders::_1, std::placeholders::_2));
-		_dispatcher.RegisterMessageCallback<LoginResult>(std::bind(&TestClient::OnLoginResult, this, std::placeholders::_1, std::placeholders::_2));
-		_dispatcher.RegisterMessageCallback<ReturnZoneList>(std::bind(&TestClient::OnReturnZoneList, this, std::placeholders::_1, std::placeholders::_2));
-		_dispatcher.RegisterMessageCallback<ResponseZoneRoleData>(std::bind(&TestClient::OnResponseZoneRoleData, this, std::placeholders::_1, std::placeholders::_2));
-		_dispatcher.RegisterMessageCallback<RspCreateRole>(std::bind(&TestClient::OnRspCreateRole, this, std::placeholders::_1, std::placeholders::_2));
+		_dispatcher.RegisterMessageCallback<ActiveHeartBeat>(std::bind(&TestClient::OnActiveHeartBeat, this, _1, _2));
+		_dispatcher.RegisterMessageCallback<RspRsaPublicKey>(std::bind(&TestClient::OnRspRsaPublicKey, this, _1, _2));
+		_dispatcher.RegisterMessageCallback<RegisterResult>(std::bind(&TestClient::OnRegisterResult, this, _1, _2));
+		_dispatcher.RegisterMessageCallback<LoginResult>(std::bind(&TestClient::OnLoginResult, this, _1, _2));
+		_dispatcher.RegisterMessageCallback<ReturnZoneList>(std::bind(&TestClient::OnReturnZoneList, this, _1, _2));
+		_dispatcher.RegisterMessageCallback<RspZoneRoleData>(std::bind(&TestClient::OnRspZoneRoleData, this, _1, _2));
+		_dispatcher.RegisterMessageCallback<RspCreateRole>(std::bind(&TestClient::OnRspCreateRole, this, _1, _2));
 		
 		
 		Init();
 	}
 
 	struct ZoneServer {
-		int id = 0;
+		int32_t id = 0;
 		std::string name;
 		std::string ip;
-		unsigned int port = 0;
-		unsigned int state = 0;
+		uint32_t port = 0;
+		uint32_t state = 0;
 	};
 
 public:
@@ -45,8 +45,8 @@ public:
 		global_logger_init("./log/client.log");
 		global_logger_set_filter(severity >= debug);
 
-		_pTcpService->SetMessageCallback(std::bind(&ProtobufCodec::RecvMessage, &_codec, std::placeholders::_1, std::placeholders::_2));
-		_pTcpService->SetAtvConnCallback(std::bind(&TestClient::OnAtvConnection, this, std::placeholders::_1));
+		_pTcpService->SetMessageCallback(std::bind(&ProtobufCodec::RecvMessage, &_codec, _1, _2));
+		_pTcpService->SetAtvConnCallback(std::bind(&TestClient::OnAtvConnection, this, _1));
 	}
 
 	void Start() { 
@@ -84,7 +84,7 @@ public:
 					break;
 					case '1':
 					{
-						auto pMsg = std::make_shared<RequestRsaPublicKey>();
+						auto pMsg = std::make_shared<ReqRsaPublicKey>();
 						_pConnection->AsyncSend(pMsg);
 						log(normal, "TestClient") << "request ras public key!";
 					}
@@ -96,7 +96,7 @@ public:
 							break;
 						}
 
-						auto pMsg = std::make_shared<RequestRegister>();
+						auto pMsg = std::make_shared<ReqRegister>();
 						if (pMsg) {
 							pMsg->set_account("captzx");
 							pMsg->set_password(RSAEncrypt(_key, "123"));
@@ -113,7 +113,7 @@ public:
 							break;
 						}
 
-						auto pMsg = std::make_shared<RequestLogin>();
+						auto pMsg = std::make_shared<ReqLogin>();
 						if (pMsg) {
 							pMsg->set_account("captzx");
 							pMsg->set_password(RSAEncrypt(_key, "123"));
@@ -187,8 +187,8 @@ public:
 		log(debug, "TestClient") << "client onConnection, start op.";
 	}
 	void OnActiveHeartBeat(const TcpConnectionPtr& pConnection, const std::shared_ptr<ActiveHeartBeat>& pMessage) {
-		unsigned int now = Now::Second();
-		int diff = pMessage->last_hb_time() - now;
+		uint32_t now = Now::Second();
+		int32_t diff = pMessage->last_hb_time() - now;
 
 		log(trivial, "TestClient") << "recv heart beat: " << now << ", diff: " << diff;
 
@@ -200,13 +200,13 @@ public:
 			pMsg->set_cnt_start_time(pConnection->GetStartTime());
 			pMsg->set_address(pConnection->GetLocalEndpoint());
 			pMsg->set_pid(pConnection->GetPid());
-			pMsg->set_atv_count(_pTcpService->GetActiveConnectCount());
-			pMsg->set_psv_count(_pTcpService->GetPassiveConnectCount());
+			pMsg->set_atv_count(_pTcpService->GetAtvConnMgr().GetConnectedCount());
+			pMsg->set_psv_count(_pTcpService->GetPsvConnMgr().GetConnectedCount());
 
 			pConnection->AsyncSend(pMsg);
 		}
 	}
-	void OnResponseRsaPublicKey(const TcpConnectionPtr& pConnection, const std::shared_ptr<ResponseRsaPublicKey>& pMessage) {
+	void OnRspRsaPublicKey(const TcpConnectionPtr& pConnection, const std::shared_ptr<RspRsaPublicKey>& pMessage) {
 		_key = pMessage->publickey();
 	}
 	void OnRegisterResult(const TcpConnectionPtr& pConnection, const std::shared_ptr<RegisterResult>& pMessage) {
@@ -240,10 +240,10 @@ public:
 		}
 	}
 	void OnReturnZoneList(const TcpConnectionPtr& pConnection, const std::shared_ptr<ReturnZoneList>& pMsg) {
-		for (int i = 0; i < pMsg->zone_servers_size(); ++i) {
+		for (int32_t i = 0; i < pMsg->zone_servers_size(); ++i) {
 			auto zone = pMsg->zone_servers(i);
 
-			unsigned int zoneid = zone.id();
+			uint32_t zoneid = zone.id();
 
 			_zoneList[zoneid].id = zone.id();
 			_zoneList[zoneid].name = zone.name();
@@ -253,12 +253,12 @@ public:
 			log(debug, "TestClient") << "recv zone server: " << zone.id() << " " << zone.name() << " " << zone.ip() << " " << zone.port();
 		}
 	}
-	void OnResponseZoneRoleData(const TcpConnectionPtr& pConnection, const std::shared_ptr<ResponseZoneRoleData>& pMsg) {
+	void OnRspZoneRoleData(const TcpConnectionPtr& pConnection, const std::shared_ptr<RspZoneRoleData>& pMsg) {
 		log(debug, "TestClient") << "recv RoleList";
 
 		RoleList roleList = pMsg->rolelist();
 
-		for (int i = 0; i < roleList.roles_size(); ++i) {
+		for (int32_t i = 0; i < roleList.roles_size(); ++i) {
 			auto role = roleList.roles(i);
 
 			log(debug, "TestClient") << role.name() << " " << role.role_id();
@@ -281,14 +281,14 @@ private:
 	TcpConnectionPtr _pConnection;
 
 	std::string _key;
-	ull _act_id;
-	std::map<unsigned int, ZoneServer> _zoneList;
+	uint64_t _act_id;
+	std::map<uint32_t, ZoneServer> _zoneList;
 	std::string _ip;
-	unsigned int _port;
-	unsigned int _state;
+	uint32_t _port;
+	uint32_t _state;
 };
 
-int main(int argc, char* argv[])
+int32_t main(int32_t argc, char* argv[])
 {
 	TestClient testClient("TestClient");
 	testClient.Start();

@@ -3,11 +3,6 @@
 
 #include "LoginServer.h"
 
-using x::tool::Singleton;
-using x::tool::UuidGenerator;
-
-using namespace x::net;
-
 namespace x {
 
 namespace login {
@@ -22,23 +17,23 @@ public:
 	LoginUser();
 
 public:
-	long long GetID() { return _id; }
-	void SetID(ull id) { _id = id; }
+	uint64_t GetID() { return _id; }
+	void SetID(uint64_t id) { _id = id; }
 	void SetState(LoginState state) { _state = state; }
-	void SetLastAccessTime(unsigned int timestamp) { _lastAccessTime = timestamp; }
+	void SetLastAccessTime(uint32_t timestamp) { _lastAccessTime = timestamp; }
 
 	void SetConnection(const TcpConnectionPtr& pConnection) { _wpConnection = pConnection; }
 	TcpConnectionWeakPtr& GetConnection() { return _wpConnection; }
 
-	void SetZoneAddress(std::pair<std::string, unsigned int> address) { _address = address; }
-	std::pair<std::string, unsigned int> GetZoneAddress() { return _address; }
+	void SetZoneAddress(std::pair<std::string, uint32_t> address) { _address = address; }
+	std::pair<std::string, uint32_t> GetZoneAddress() { return _address; }
 private:
-	ull _id;
+	uint64_t _id;
 	LoginState _state;
-	unsigned int _lastAccessTime;
+	uint32_t _lastAccessTime;
 
 	TcpConnectionWeakPtr _wpConnection;
-	std::pair<std::string, unsigned int> _address;
+	std::pair<std::string, uint32_t> _address;
 };
 
 class LoginUserManager : public Singleton<LoginUserManager> {
@@ -47,18 +42,18 @@ public:
 
 public:
 	void Init();
-	std::shared_ptr<LoginUser> FindUser(ull actid);
+	std::shared_ptr<LoginUser> FindUser(uint64_t actid);
 
 public:
 	void RegisterMessageCallback();
 
 public:
-	void OnRequestRsaPublicKey(const TcpConnectionPtr&, const std::shared_ptr<RequestRsaPublicKey>&);
+	void OnReqRsaPublicKey(const TcpConnectionPtr&, const std::shared_ptr<ReqRsaPublicKey>&);
+	void OnReqRegister(const TcpConnectionPtr&, const std::shared_ptr<ReqRegister>&);
+	void OnReqLogin(const TcpConnectionPtr&, const std::shared_ptr<ReqLogin>&);
 
-	void OnRequestRegister(const TcpConnectionPtr&, const std::shared_ptr<RequestRegister>&);
-	bool SendRegisterResult(const TcpConnectionPtr&, int result);
+	bool SendRegisterResult(const TcpConnectionPtr&, int32_t result);
 
-	void OnRequestLogin(const TcpConnectionPtr&, const std::shared_ptr<RequestLogin>&);
 public:
 	bool VerifyAccount(const std::string& account);
 	bool VerifyPassword(const std::string& account, const std::string& password);
@@ -69,8 +64,8 @@ private:
 	std::string _private_key;
 	std::string _public_key;
 	UuidGenerator _uuidGenerator;
-	std::pair<std::string, unsigned int> _address;
-	std::map<ull, std::shared_ptr<LoginUser>> _userManager;
+	std::pair<std::string, uint32_t> _address;
+	std::map<uint64_t, std::shared_ptr<LoginUser>> _userManager;
 };
 
 }
