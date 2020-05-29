@@ -142,6 +142,29 @@ private:
 	std::map<std::pair<uint32_t, uint32_t>, ServerCfg> _serverCfgs; // {type, id} => ServerCfg
 };
 
+void filter_blank(std::string& str) {
+	std::regex reg("[[:s:]]");
+	str = std::regex_replace(str, reg, "");
+}
+
+void token_split(const std::string& str, std::vector<std::string>& result, const char* regex = "\\[[[:d:]],[[:d:]]\\]") {
+	std::regex reg(regex);
+	sregex_token_iterator pos(str.cbegin(), str.cend(), reg, 0), end;
+	for (; pos != end; ++pos) result.push_back(*pos);
+}
+
+void to_pairs(std::string& str, std::vector<std::pair<int, int>>& pairs, const char* regex = "([[:d:]]+)[[:punct:]]([[:d:]]+)") {
+	filter_blank(str);
+
+	std::vector<std::string> strs;
+	token_split(str, strs);
+
+	std::regex reg(regex);
+	for (auto str : strs) {
+		sregex_iterator pos(str.cbegin(), str.cend(), reg), end;
+		for (; pos != end; ++pos) pairs.push_back({ std::atoi(pos->str(1).c_str()), std::atoi(pos->str(2).c_str()) });
+	}
+}
 } // namespace tool
 
 } // namespace x
